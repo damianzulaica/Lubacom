@@ -1,0 +1,2589 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lubacom · Gestión Financiera</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+--bg:#F1F6FC;
+--surface:#FFFFFF;
+--surface-soft:#EAF1FB;
+--surface-2:#E7EFFA;
+--border:#D8E4F4;
+--border-strong:#B9CDE9;
+--text:#102A52;
+--text-soft:#33476E;
+--muted:#66789A;
+
+--brand:#2F6FED;
+--brand-soft:rgba(47,111,237,.10);
+--brand-line:rgba(47,111,237,.35);
+--grad-brand:linear-gradient(135deg,#123B7A 0%,#2F6FED 100%);
+
+--planta:#16A34A;
+--planta-soft:rgba(22,163,74,.10);
+--planta-line:rgba(22,163,74,.35);
+--grad-planta:linear-gradient(135deg,#0F7A38 0%,#22C55E 100%);
+
+--sub:#D97706;
+--sub-soft:rgba(217,119,6,.10);
+--sub-line:rgba(217,119,6,.35);
+--grad-sub:linear-gradient(135deg,#9A5209 0%,#F0940E 100%);
+
+--neutral:#5B6B8C;
+--neutral-soft:rgba(91,107,140,.10);
+--neutral-line:rgba(91,107,140,.32);
+
+--danger:#DC2F45;
+--danger-soft:rgba(220,47,69,.10);
+--danger-line:rgba(220,47,69,.35);
+
+--font-display:'Space Grotesk', sans-serif;
+--font-body:'Inter', sans-serif;
+--font-mono:'IBM Plex Mono', monospace;
+
+--radius-lg:18px;
+--radius-md:12px;
+--radius-sm:8px;
+--shadow-sm:0 1px 3px rgba(16,42,82,.08), 0 1px 2px rgba(16,42,82,.06);
+--shadow-md:0 14px 34px rgba(16,42,82,.16);
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+font-family:var(--font-body);
+background:radial-gradient(circle at 18% -10%, #E3EDFB 0%, var(--bg) 55%);
+color:var(--text);
+-webkit-font-smoothing:antialiased;
+}
+#app{display:flex;min-height:100vh;}
+svg.ico{width:18px;height:18px;display:block;}
+
+.sidebar{
+width:252px;flex-shrink:0;background:var(--surface-soft);border-right:1px solid var(--border);
+display:flex;flex-direction:column;padding:26px 18px;
+position:sticky;top:0;height:100vh;
+}
+.brand{display:flex;flex-direction:column;align-items:flex-start;gap:8px;margin-bottom:28px;padding:4px 4px 14px;border-bottom:1px solid var(--border);}
+.brand-logo{width:100%;max-width:170px;height:auto;display:block;}
+.brand-text .sub{font-size:10.5px;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;margin-top:0;}
+
+nav.navlist{display:flex;flex-direction:column;gap:2px;flex:1;}
+.navitem{
+display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--radius-sm);
+color:var(--muted);font-size:14px;font-weight:500;cursor:pointer;user-select:none;
+border-left:2px solid transparent;transition:background .15s, color .15s;
+}
+.navitem:hover{background:var(--surface-2);color:var(--text);}
+.navitem.active{background:var(--brand-soft);color:var(--brand);border-left:2px solid var(--brand);font-weight:600;}
+
+.cta-cargar{
+margin-top:16px;background:var(--grad-brand);color:#fff;border:none;border-radius:var(--radius-sm);
+padding:13px 14px;font-family:var(--font-body);font-weight:600;font-size:14px;cursor:pointer;
+display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 6px 18px rgba(47,111,237,.35);
+}
+.cta-cargar:hover{filter:brightness(1.08);}
+.sidebar-foot{margin-top:14px;font-size:11px;color:var(--muted);line-height:1.5;padding:0 2px;}
+
+.period-selector{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:6px 10px;}
+.period-label{font-family:var(--font-display);font-weight:700;font-size:14.5px;color:var(--text);min-width:130px;text-align:center;}
+.brand-banner{
+width:100%;border-radius:var(--radius-lg);overflow:hidden;margin-bottom:22px;
+border:1px solid var(--border-strong);box-shadow:var(--shadow-sm);line-height:0;
+}
+.brand-banner img{width:100%;height:auto;display:block;max-height:100px;object-fit:cover;}
+main.content{flex:1;padding:30px 40px 60px;max-width:1300px;}
+.viewhead{margin-bottom:22px;}
+.viewhead h1{font-family:var(--font-display);font-weight:700;font-size:26px;margin:0 0 6px;letter-spacing:-.3px;color:var(--text);}
+.viewhead p{margin:0;color:var(--muted);font-size:14px;max-width:640px;line-height:1.5;}
+.view{display:none;}
+.view.active{display:block;}
+
+.kpi-strip{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:26px;}
+.kpi-strip-3col{grid-template-columns:repeat(3,1fr);}
+.kpi-strip-4col{grid-template-columns:repeat(4,1fr);}
+.kpi-card{
+background:var(--surface);border:1px solid var(--panel-border,var(--border));border-radius:var(--radius-lg);
+padding:18px 18px;box-shadow:var(--shadow-sm);position:relative;display:flex;gap:12px;align-items:flex-start;
+}
+.kpi-icon{
+width:36px;height:36px;border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;
+background:var(--panel-soft,var(--brand-soft));color:var(--accent,var(--brand));
+}
+.kpi-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);margin-bottom:6px;}
+.kpi-value{font-family:var(--font-mono);font-size:21px;font-weight:600;color:var(--text);}
+.kpi-value.pos{color:var(--planta);}
+.kpi-value.neg{color:var(--danger);}
+.kpi-subline{font-size:11px;color:var(--muted);margin-top:5px;font-family:var(--font-mono);}
+.kpi-subline .pos{color:var(--planta);} .kpi-subline .neg{color:var(--danger);}
+
+.workflow-bar{
+border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px 22px 20px;margin-bottom:26px;background:var(--surface-soft);
+}
+.workflow-title{display:flex;align-items:center;gap:14px;justify-content:center;margin-bottom:16px;}
+.workflow-title .line{flex:1;height:1px;background:var(--border-strong);max-width:120px;}
+.workflow-title span{font-family:var(--font-display);font-size:12.5px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--text-soft);}
+.balances-row{display:flex;flex-wrap:wrap;gap:12px;}
+.balance-chip{
+flex:1;min-width:170px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);
+padding:12px 14px;display:flex;align-items:center;gap:10px;
+}
+.balance-chip .bicon{width:30px;height:30px;border-radius:8px;background:var(--brand-soft);color:var(--brand);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.balance-chip .name{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px;font-weight:600;}
+.balance-chip .val{font-family:var(--font-mono);font-size:15px;font-weight:600;}
+.balance-chip .obs{font-size:10px;color:var(--sub);margin-top:3px;font-family:var(--font-mono);}
+
+.saldos-sidebar{
+width:230px;flex-shrink:0;background:var(--surface-soft);border-left:1px solid var(--border);
+padding:26px 18px;position:sticky;top:0;height:100vh;overflow-y:auto;display:flex;flex-direction:column;gap:10px;
+}
+.saldos-col-title{font-family:var(--font-display);font-size:13px;font-weight:700;color:var(--text-soft);text-transform:uppercase;letter-spacing:.6px;margin-bottom:2px;}
+.saldos-sidebar .balance-chip{flex:none;width:100%;min-width:0;}
+#balances-strip{display:flex;flex-direction:column;gap:10px;}
+
+.thermo-wrap{max-width:640px;margin:0 auto;}
+.thermo-track{height:24px;background:var(--surface-2);border:1px solid var(--border);border-radius:20px;overflow:hidden;}
+.thermo-fill{height:100%;border-radius:20px;background:var(--grad-planta);transition:width .4s ease;}
+.thermo-fill.warn{background:var(--grad-sub);}
+.thermo-fill.danger{background:linear-gradient(135deg,#8A1F17 0%,var(--danger) 100%);}
+.thermo-labels{display:flex;justify-content:space-between;margin-top:9px;font-size:12.5px;color:var(--text-soft);}
+.thermo-labels strong{color:var(--text);}
+
+.board{flex:1;display:grid;grid-template-columns:1fr 1.05fr 1fr;gap:18px;align-items:start;}
+.col{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;box-shadow:var(--shadow-sm);}
+.col-band{padding:15px 17px;display:flex;align-items:center;gap:10px;}
+.col-planta .col-band{background:var(--grad-planta);}
+.col-central .col-band{background:var(--grad-brand);}
+.col-sub .col-band{background:var(--grad-sub);}
+.col-band-icon{width:32px;height:32px;border-radius:9px;background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#fff;}
+.col-band-title{font-family:var(--font-display);font-weight:700;font-size:14.5px;color:#fff;letter-spacing:.2px;flex:1;}
+.col-band-count{font-family:var(--font-mono);font-size:11.5px;color:#fff;background:rgba(255,255,255,.2);padding:3px 10px;border-radius:20px;}
+.col-body{padding:15px;min-height:180px;}
+
+.group-card{border:1px solid var(--border);border-radius:var(--radius-md);padding:12px 13px;margin-bottom:9px;background:var(--surface-2);}
+.group-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;}
+.group-name{font-size:13.5px;font-weight:600;color:var(--text);}
+.group-meta{font-size:11px;color:var(--muted);margin-top:2px;}
+.group-net{font-family:var(--font-mono);font-size:14.5px;font-weight:600;white-space:nowrap;}
+.net-pos{color:var(--planta);}
+.net-neg{color:var(--danger);}
+.group-actions{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;}
+.chip-btn{
+font-size:11px;padding:4px 9px;border-radius:20px;border:1px solid var(--border);
+background:transparent;color:var(--muted);cursor:pointer;font-family:var(--font-body);
+}
+.chip-btn:hover{border-color:var(--text-soft);color:var(--text);}
+.detail-list{margin-top:8px;border-top:1px dashed var(--border);padding-top:8px;display:none;}
+.detail-list.open{display:block;}
+.detail-row{display:flex;justify-content:space-between;font-size:12px;padding:3px 0;color:var(--text-soft);gap:6px;}
+.detail-row .amt{font-family:var(--font-mono);}
+.detail-row .acts{display:flex;gap:6px;}
+.detail-row .acts a{color:var(--muted);cursor:pointer;font-size:11px;text-decoration:underline;}
+
+.unclassified-card{border:1px solid var(--border);border-radius:var(--radius-md);padding:12px 13px;margin-bottom:9px;background:var(--surface-2);}
+.uc-top{display:flex;justify-content:space-between;gap:8px;}
+.uc-entidad{font-weight:600;font-size:13.5px;color:var(--text);}
+.uc-amt{font-family:var(--font-mono);font-weight:600;font-size:14px;}
+.uc-meta{font-size:11px;color:var(--muted);margin-top:3px;}
+
+.uc-primary-row{display:flex;align-items:center;gap:7px;margin-top:10px;}
+.arrow-btn{
+width:30px;height:30px;border-radius:50%;border:1px solid var(--border);background:transparent;
+display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--muted);
+font-size:14px;flex-shrink:0;font-family:var(--font-body);
+}
+.arrow-btn:hover{border-color:var(--brand);color:var(--brand);}
+.btn100{flex:1;text-align:center;font-size:11.5px;font-weight:600;padding:8px 6px;border-radius:var(--radius-sm);border:1px solid;cursor:pointer;font-family:var(--font-body);}
+.btn100-planta{color:var(--planta);border-color:var(--planta-line);background:var(--planta-soft);}
+.btn100-sub{color:var(--sub);border-color:var(--sub-line);background:var(--sub-soft);}
+
+.uc-secondary-row{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;}
+.uc-secondary-row button{
+font-size:11px;padding:5px 9px;border-radius:20px;border:1px solid var(--border);
+background:transparent;cursor:pointer;font-family:var(--font-body);font-weight:500;color:var(--muted);
+}
+.btn-retiro,.btn-ahorro{color:var(--neutral)!important;border-color:var(--neutral-line)!important;background:var(--neutral-soft)!important;}
+.btn-ghost{color:var(--muted);}
+.btn-danger{color:var(--danger);}
+
+.empty-col{font-size:12.5px;color:var(--muted);font-style:italic;padding:10px 2px;}
+
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;margin-bottom:20px;box-shadow:var(--shadow-sm);}
+.panel h3{font-family:var(--font-display);font-size:16px;margin:0 0 14px;font-weight:700;color:var(--text);}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);padding:8px 10px;border-bottom:1px solid var(--border);}
+td{padding:10px;border-bottom:1px solid var(--border);color:var(--text-soft);}
+td.mono, th.mono{font-family:var(--font-mono);}
+tr.total-row td{font-weight:700;border-top:2px solid var(--border-strong);border-bottom:none;color:var(--text);}
+.pos{color:var(--planta);} .neg{color:var(--danger);}
+.badge{font-size:10.5px;padding:2px 9px;border-radius:20px;font-weight:600;text-transform:uppercase;letter-spacing:.3px;}
+.badge-pend{background:var(--sub-soft);color:var(--sub);}
+.badge-cob{background:var(--planta-soft);color:var(--planta);}
+.badge-venc{background:var(--danger-soft);color:var(--danger);}
+.row-acts a{font-size:11px;color:var(--muted);text-decoration:underline;cursor:pointer;margin-right:8px;}
+
+.month-picker{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px;}
+.month-chip{
+font-family:var(--font-mono);font-size:12px;padding:5px 11px;border-radius:20px;
+border:1px solid var(--border);background:transparent;cursor:pointer;color:var(--muted);
+}
+.month-chip.on{background:var(--grad-brand);color:#fff;border-color:transparent;}
+
+select.mini{font-family:var(--font-body);font-size:12px;padding:5px 7px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface-2);color:var(--text);}
+
+
+.mayores-layout{display:flex;gap:18px;align-items:flex-start;}
+.mayores-list-panel{width:290px;flex-shrink:0;max-height:640px;overflow-y:auto;}
+.mayores-detalle-panel{flex:1;min-width:0;}
+.mayor-item{
+display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 11px;border-radius:var(--radius-sm);
+cursor:pointer;border:1px solid transparent;margin-bottom:4px;
+}
+.mayor-item:hover{background:var(--surface-2);}
+.mayor-item.active{background:var(--brand-soft);border-color:var(--brand-line);}
+.mayor-item .nom{font-size:13px;font-weight:600;color:var(--text);}
+.mayor-item .sub{font-size:11px;color:var(--muted);margin-top:2px;}
+.mayor-item .net{font-family:var(--font-mono);font-size:12.5px;font-weight:600;white-space:nowrap;}
+.mayor-resumen-row{display:flex;gap:10px;flex-wrap:wrap;}
+.mayor-resumen-chip{background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-md);padding:10px 14px;flex:1;min-width:140px;}
+.mayor-resumen-chip .lbl{font-size:10.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px;font-weight:600;}
+.mayor-resumen-chip .val{font-family:var(--font-mono);font-size:15px;font-weight:600;}
+
+.placeholder{background:var(--surface);border:1px dashed var(--border-strong);border-radius:var(--radius-lg);padding:40px;text-align:center;color:var(--muted);}
+.placeholder h3{font-family:var(--font-display);color:var(--text);font-size:18px;margin-bottom:8px;font-weight:700;}
+
+.modal-overlay{
+position:fixed;inset:0;background:rgba(4,6,12,.7);display:none;
+align-items:center;justify-content:center;z-index:100;padding:20px;
+}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--surface);border:1px solid var(--border-strong);border-radius:var(--radius-lg);width:100%;max-width:580px;max-height:88vh;overflow-y:auto;padding:26px 28px;box-shadow:var(--shadow-md);}
+.modal h2{font-family:var(--font-display);font-size:19px;margin:0 0 4px;font-weight:700;color:var(--text);}
+.modal .modal-sub{font-size:12.5px;color:var(--muted);margin-bottom:16px;line-height:1.5;}
+.modal-tabs{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;}
+.modal-tab{padding:8px 14px;font-size:13px;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-weight:600;}
+.modal-tab.active{background:var(--grad-brand);color:#fff;border-color:transparent;}
+.modal-tab-primary{flex:1;flex-wrap:nowrap;text-align:center;white-space:nowrap;padding:10px 12px;font-size:14px;}
+#modal-tabs-primary{flex-wrap:nowrap;}
+.modal-tab-sm{padding:6px 12px;font-size:12px;font-weight:500;}
+.form-row{margin-bottom:13px;}
+.form-row label{display:block;font-size:12px;font-weight:600;color:var(--text-soft);margin-bottom:5px;}
+.form-row input, .form-row select, .form-row textarea{
+width:100%;padding:9px 10px;border-radius:var(--radius-sm);border:1px solid var(--border);
+font-family:var(--font-body);font-size:13.5px;background:var(--surface-2);color:var(--text);
+}
+.form-row input::placeholder, .form-row textarea::placeholder{color:#8FA1C2;}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.radio-group{display:flex;gap:8px;}
+.radio-group label{
+flex:1;border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px;text-align:center;
+font-size:13px;font-weight:500;cursor:pointer;margin:0;color:var(--text-soft);
+}
+.radio-group input{width:auto;display:none;}
+.radio-group label.checked{border-color:var(--brand);background:var(--grad-brand);color:#fff;}
+.hint{font-size:11px;color:var(--muted);margin-top:4px;}
+.warn{font-size:11px;color:var(--sub);margin-top:4px;}
+.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:20px;}
+.btn{padding:10px 16px;border-radius:var(--radius-sm);font-size:13.5px;font-weight:600;cursor:pointer;border:1px solid transparent;font-family:var(--font-body);}
+.btn-primary{background:var(--grad-brand);color:#fff;}
+.btn-primary:hover{filter:brightness(1.08);}
+.btn-cancel{background:transparent;border-color:var(--border);color:var(--text-soft);}
+.btn-cancel:hover{border-color:var(--text-soft);}
+.subc-list{max-height:160px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--radius-sm);margin-top:8px;}
+.subc-item{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;font-size:13px;border-bottom:1px solid var(--border);color:var(--text-soft);}
+.subc-item:last-child{border-bottom:none;}
+.subc-item button{background:none;border:none;color:var(--muted);cursor:pointer;font-size:12px;}
+.subc-pick{cursor:pointer;flex:1;}
+.subc-pick:hover{color:var(--brand);}
+.toast{
+position:fixed;bottom:22px;right:22px;background:#123B7A;border:1px solid #0D2A57;color:#fff;padding:12px 18px;
+border-radius:var(--radius-sm);font-size:13px;z-index:200;display:none;box-shadow:var(--shadow-md);
+}
+.asig-group{display:flex;flex-wrap:wrap;gap:7px;}
+.asig-btn{padding:8px 13px;border-radius:20px;border:1px solid var(--border);background:var(--surface-2);color:var(--text-soft);font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font-body);}
+.asig-btn.active{border-color:transparent;color:#fff;}
+.asig-btn.active[data-val="planta"]{background:var(--grad-planta);}
+.asig-btn.active[data-val="subcontratado"]{background:var(--grad-sub);}
+.asig-btn.active[data-val="split"]{background:var(--grad-brand);}
+.asig-btn.active[data-val="retiro"],.asig-btn.active[data-val="ahorro"]{background:var(--neutral);color:#0A0E17;}
+.asig-btn.active[data-val="sin_clasificar"]{border-color:var(--border-strong);background:var(--surface-2);color:var(--text);}
+.meses-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+.mes-chip{
+font-family:var(--font-mono);font-size:11.5px;background:var(--brand-soft);color:#2F6FED;
+padding:4px 8px 4px 10px;border-radius:20px;display:flex;align-items:center;gap:6px;
+}
+.mes-chip a{cursor:pointer;color:#2F6FED;font-weight:700;}
+.mes-add-row{display:flex;gap:8px;}
+.mes-add-row input{flex:1;}
+.mes-add-row button{padding:0 14px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface-2);color:var(--text);cursor:pointer;font-weight:600;}
+.fact-match-chip{
+font-family:var(--font-mono);font-size:11.5px;background:var(--sub-soft);color:var(--sub);border:1px solid transparent;
+padding:6px 11px;border-radius:20px;cursor:pointer;
+}
+.fact-match-chip.none{background:var(--surface-2);color:var(--muted);font-family:var(--font-body);}
+.fact-match-chip.selected{border-color:var(--sub);background:var(--sub);color:#1A1200;font-weight:700;}
+.fact-match-chip.none.selected{border-color:var(--text-soft);background:var(--surface-2);color:var(--text);font-weight:700;}
+.icon-btn{
+width:26px;height:26px;border-radius:7px;border:1px solid var(--border);background:transparent;
+display:inline-flex;align-items:center;justify-content:center;cursor:pointer;color:var(--muted);
+}
+.icon-btn:hover{border-color:var(--text-soft);color:var(--text);}
+.icon-btn.danger:hover{border-color:var(--danger);color:var(--danger);}
+@media(max-width:980px){
+.board{grid-template-columns:1fr;}
+.mayores-layout{flex-direction:column;}
+.mayores-list-panel{width:100%;max-height:260px;}
+.saldos-sidebar{width:100%;height:auto;position:relative;flex-direction:row;flex-wrap:wrap;border-left:none;border-top:1px solid var(--border);}
+.saldos-sidebar .saldos-col-title{width:100%;}
+.saldos-sidebar .balance-chip{width:auto;flex:1;min-width:150px;}
+.kpi-strip{grid-template-columns:1fr 1fr;}
+.kpi-strip-3col{grid-template-columns:1fr;}
+.kpi-strip-4col{grid-template-columns:1fr 1fr;}
+#app{flex-direction:column;}
+.sidebar{width:100%;height:auto;position:relative;flex-direction:row;flex-wrap:wrap;align-items:center;}
+nav.navlist{flex-direction:row;flex-wrap:wrap;flex:none;}
+main.content{padding:22px 18px 50px;}
+}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+</head>
+<body>
+<div id="app">
+<aside class="sidebar">
+<div class="brand">
+<img class="brand-logo" src="data:image/png;base64,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" alt="Lubacom SRL">
+<div class="brand-text">
+<div class="sub">Gestión Financiera</div>
+</div>
+</div>
+<nav class="navlist" id="navlist">
+<div class="navitem active" data-view="clasificacion">Clasificación</div>
+<div class="navitem" data-view="cashflow">Cash Flow</div>
+<div class="navitem" data-view="facturas">Facturas &amp; Cobranzas</div>
+<div class="navitem" data-view="mayores">Mayores</div>
+<div class="navitem" data-view="produccion">Producción</div>
+</nav>
+<button class="cta-cargar" id="btn-cargar">+ Cargar</button>
+<div class="sidebar-foot" id="storage-status">Guardando localmente…</div>
+<div class="sidebar-foot" style="margin-top:4px;opacity:.6;">Versión: 2026-08-12.6 (diag)</div>
+<div class="sidebar-foot" style="margin-top:6px;"><a href="#" id="btn-debug" style="color:#2F6FED;text-decoration:underline;">Ver datos guardados (debug)</a></div>
+<div class="sidebar-foot" style="margin-top:6px;display:flex;gap:10px;">
+<a href="#" id="btn-exportar-archivo" style="color:#2F6FED;text-decoration:underline;">Exportar</a>
+<a href="#" id="btn-importar-archivo" style="color:#2F6FED;text-decoration:underline;">Importar</a>
+</div>
+<input type="file" id="input-importar-archivo" accept="application/json,.json" style="display:none;">
+</aside>
+
+<main class="content">
+
+<div class="brand-banner"><img src="data:image/jpeg;base64,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" alt="Lubacom SRL - Obras y Servicios"></div>
+
+<div id="supabase-diag" style="display:none;padding:12px 16px;border-radius:10px;margin-bottom:16px;font-family:monospace;font-size:12.5px;font-weight:600;"></div>
+<div class="kpi-strip" id="kpi-strip"></div>
+
+<!-- ============ CLASIFICACIÓN ============ -->
+<section class="view active" id="view-clasificacion">
+<div class="viewhead" style="display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:14px;">
+<div>
+<h1>Tablero de Clasificación</h1>
+<p>Clasificá cada movimiento en Planta Propia o Subcontratados: 100% directo con los botones, o repartido por % con las flechas.</p>
+</div>
+<div class="period-selector">
+<button type="button" class="icon-btn" id="btn-prev-mes" title="Mes anterior">‹</button>
+<div class="period-label" id="period-label">—</div>
+<button type="button" class="icon-btn" id="btn-next-mes" title="Mes siguiente">›</button>
+</div>
+</div>
+
+<div class="workflow-bar">
+<div class="workflow-title"><div class="line"></div><span>Gastos por Pagar</span><div class="line"></div></div>
+<div class="thermo-wrap">
+<div class="thermo-track"><div class="thermo-fill" id="thermo-fill" style="width:0%"></div></div>
+<div class="thermo-labels">
+<span>Cubierto con Disponible: <strong id="thermo-covered" class="mono">—</strong></span>
+<span>Total a pagar: <strong id="thermo-total" class="mono">—</strong></span>
+</div>
+<div class="hint" id="thermo-hint" style="margin-top:8px;"></div>
+</div>
+</div>
+
+<div class="workflow-bar" style="padding:14px 22px;margin-bottom:26px;">
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+<div style="font-size:13px;color:var(--text-soft);">🎩 Retiros: <strong id="ra-count-retiro">0</strong>&nbsp; · &nbsp;🐷 Ahorros: <strong id="ra-count-ahorro">0</strong></div>
+<button type="button" class="chip-btn" id="btn-ver-retiros-ahorros">Ver / gestionar</button>
+</div>
+</div>
+
+<div class="board">
+<div class="col col-planta">
+<div class="col-band">
+<div class="col-band-icon"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg></div>
+<div class="col-band-title">← Planta Propia</div>
+<div class="col-band-count" id="count-planta">0</div>
+</div>
+<div class="col-body" id="col-planta-body"></div>
+</div>
+<div class="col col-central">
+<div class="col-band">
+<div class="col-band-icon"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"></polyline><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"></path></svg></div>
+<div class="col-band-title">Gastos a Clasificar</div>
+<div class="col-band-count" id="count-sinclasificar">0</div>
+</div>
+<div class="col-body" id="col-central-body"></div>
+</div>
+<div class="col col-sub">
+<div class="col-band">
+<div class="col-band-icon"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg></div>
+<div class="col-band-title">Subcontratados →</div>
+<div class="col-band-count" id="count-sub">0</div>
+</div>
+<div class="col-body" id="col-sub-body"></div>
+</div>
+</div>
+</section>
+
+<!-- ============ CASH FLOW ============ -->
+<section class="view" id="view-cashflow">
+<div class="viewhead">
+<h1>Cash Flow</h1>
+<p>Saldos de billetera en tiempo real por cuenta. Elegí qué meses incluir.</p>
+</div>
+<div class="panel">
+<h3>Meses a incluir</h3>
+<div class="month-picker" id="month-picker"></div>
+<table>
+<thead><tr><th>Cuenta</th><th class="mono">Ingresos</th><th class="mono">Egresos</th><th class="mono">Saldo</th></tr></thead>
+<tbody id="cashflow-body"></tbody>
+</table>
+</div>
+</section>
+
+<!-- ============ FACTURAS ============ -->
+<section class="view" id="view-facturas">
+<div class="viewhead">
+<h1>Facturas, Cobranzas &amp; Deudas</h1>
+<p>Facturas emitidas o recibidas — no implican que el dinero ya se movió. Para eso está el Cash Flow.</p>
+</div>
+<div class="kpi-strip kpi-strip-4col" id="kpi-strip-facturas"></div>
+<div class="panel">
+<h3>Por cobrar (facturas emitidas) <span style="color:var(--muted);font-weight:400;font-size:12.5px;">— Deudores por Ventas</span></h3>
+<table>
+<thead><tr><th>Factura</th><th>Cliente</th><th>Emisión</th><th class="mono">Monto</th><th>Estado</th><th class="mono">Días</th><th></th></tr></thead>
+<tbody id="facturas-cobrar-body"></tbody>
+</table>
+</div>
+<div class="panel">
+<h3>Por pagar (facturas recibidas) <span style="color:var(--muted);font-weight:400;font-size:12.5px;">— Deudas por Compras</span></h3>
+<table>
+<thead><tr><th>Factura</th><th>Proveedor</th><th>Emisión</th><th class="mono">Monto</th><th>Estado</th><th class="mono">Días</th><th></th></tr></thead>
+<tbody id="facturas-pagar-body"></tbody>
+</table>
+</div>
+</section>
+
+<!-- ============ MAYORES ============ -->
+<section class="view" id="view-mayores">
+<div class="viewhead">
+<h1>Mayores</h1>
+<p>Historial completo, ordenado por fecha: por cliente/proveedor, o por cuenta bancaria.</p>
+</div>
+<div class="modal-tabs" id="mayores-modo-tabs" style="margin-bottom:18px;">
+<div class="modal-tab modal-tab-primary active" data-modo="entidad">Mayor de Entidades</div>
+<div class="modal-tab modal-tab-primary" data-modo="cuenta">Mayor de Cuentas</div>
+</div>
+<div class="mayores-layout">
+<div class="panel mayores-list-panel">
+<h3 id="mayores-list-title">Entidades</h3>
+<input type="text" id="mayores-buscar" placeholder="Buscar…" style="width:100%;padding:8px 10px;border-radius:var(--radius-sm);border:1px solid var(--border);font-family:var(--font-body);font-size:13px;margin-bottom:12px;background:var(--surface-2);color:var(--text);">
+<div id="mayores-list"></div>
+</div>
+<div class="panel mayores-detalle-panel">
+<h3 id="mayor-detalle-title">Elegí uno de la lista</h3>
+<div id="mayor-resumen" style="margin-bottom:14px;"></div>
+<div id="mayor-detalle-body"></div>
+</div>
+</div>
+</section>
+
+<!-- ============ PRODUCCIÓN ============ -->
+<section class="view" id="view-produccion">
+<div class="viewhead">
+<h1>Producción</h1>
+<p>Todavía a definir.</p>
+</div>
+<div class="placeholder">
+<h3>Esta solapa la definimos en el próximo paso</h3>
+<p>Cada movimiento y cada factura ya guardan sus <strong>meses de producción</strong>, así que en cuanto acordemos el criterio, los datos van a estar listos para mostrarse acá.</p>
+</div>
+</section>
+
+</main>
+
+<aside class="saldos-sidebar">
+<div class="saldos-col-title">Saldos por cuenta</div>
+<div id="balances-strip"></div>
+</aside>
+</div>
+
+<!-- ============ MODAL: cargar / editar ============ -->
+<div class="modal-overlay" id="modal-overlay">
+<div class="modal">
+<h2 id="modal-title">Cargar</h2>
+<div class="modal-sub" id="modal-subtext">Elegí qué estás cargando.</div>
+
+<div class="modal-tabs" id="modal-tabs-primary">
+<div class="modal-tab modal-tab-primary active" data-primary="movimiento">Movimiento</div>
+<div class="modal-tab modal-tab-primary" data-primary="factura">Factura</div>
+</div>
+
+<div class="modal-tabs" id="modal-tabs-secondary">
+<div class="modal-tab modal-tab-sm active" data-tab="manual">Carga manual</div>
+<div class="modal-tab modal-tab-sm" data-tab="masiva">Carga masiva</div>
+</div>
+
+<form id="form-movimiento">
+<div class="form-row">
+<label>Tipo</label>
+<div class="radio-group" id="tipo-group">
+<label class="checked" data-val="ingreso">Ingreso</label>
+<label data-val="egreso">Egreso</label>
+</div>
+</div>
+<div class="form-row" id="factura-match-box" style="display:none;">
+<label>¿Corresponde a alguna factura pendiente? Elegí una y te completamos los datos.</label>
+<div class="meses-chips" id="factura-match-list"></div>
+</div>
+<div class="form-grid">
+<div class="form-row">
+<label>Entidad (contraparte)</label>
+<input type="text" id="f-entidad" placeholder="Cliente / proveedor">
+</div>
+<div class="form-row">
+<label>Monto (incluye IVA)</label>
+<input type="number" id="f-monto" step="0.01" placeholder="0.00">
+</div>
+</div>
+<div class="form-grid">
+<div class="form-row">
+<label>Fecha</label>
+<input type="date" id="f-fecha">
+</div>
+<div class="form-row">
+<label>Cuenta</label>
+<select id="f-cuenta"></select>
+</div>
+</div>
+<div class="form-grid">
+<div class="form-row">
+<label>Categoría</label>
+<select id="f-categoria-select"></select>
+<input type="text" id="f-categoria-new" placeholder="Nueva categoría" style="margin-top:8px;display:none;">
+</div>
+<div class="form-row">
+<label>Subconcepto</label>
+<select id="f-subconcepto-select"></select>
+<input type="text" id="f-subconcepto-new" placeholder="Nuevo subconcepto" style="margin-top:8px;display:none;">
+</div>
+</div>
+<div id="asig-section">
+<div class="form-row">
+<label>¿Dónde va?</label>
+<div class="asig-group" id="asig-group">
+<button type="button" class="asig-btn active" data-val="sin_clasificar">Decidir después</button>
+<button type="button" class="asig-btn" data-val="planta">⚡ 100% Planta Propia</button>
+<button type="button" class="asig-btn" data-val="split">↔ Repartir %</button>
+<button type="button" class="asig-btn" data-val="subcontratado">⚡ 100% Subcontratados</button>
+</div>
+</div>
+<div class="form-row" id="asig-split-row" style="display:none;">
+<div class="form-grid">
+<div><label>% Planta Propia</label><input type="number" id="f-split-planta" value="50" min="0" max="100"></div>
+<div><label>% Subcontratado</label><input type="number" id="f-split-sub" value="50" min="0" max="100"></div>
+</div>
+</div>
+<div class="form-row" id="asig-sub-row" style="display:none;">
+<label>Subcontratado</label>
+<select id="f-subcontratado-select"></select>
+<input type="text" id="f-subcontratado-new" placeholder="Nombre del subcontratado nuevo" style="margin-top:8px;display:none;">
+</div>
+<div class="form-row">
+<label>¿O es Retiro / Ahorro? (no pertenece a ninguna columna)</label>
+<div class="asig-group" id="retiro-ahorro-group">
+<button type="button" class="asig-btn active" data-val="">No</button>
+<button type="button" class="asig-btn" data-val="retiro">🎩 Retiro</button>
+<button type="button" class="asig-btn" data-val="ahorro">🐷 Ahorro</button>
+</div>
+</div>
+</div>
+<div class="form-row">
+<label>Meses de producción (podés cargar más de uno — ej. una cobranza de una factura de un mes anterior)</label>
+<div class="mes-add-row">
+<input type="month" id="f-mesprod-input">
+<button type="button" id="btn-add-mov-mes">+ Agregar</button>
+</div>
+<div class="meses-chips" id="mov-meses-chips"></div>
+</div>
+<div class="form-grid">
+<div class="form-row">
+<label>IVA</label>
+<select id="f-iva">
+<option value="0">Sin IVA</option>
+<option value="21">21%</option>
+<option value="10.5">10,5%</option>
+</select>
+</div>
+<div class="form-row">
+<label>Factura asociada (opcional, solo referencia)</label>
+<input type="text" id="f-facturaref" placeholder="Ej: 0001-00001234">
+</div>
+</div>
+<div class="modal-actions">
+<button type="button" class="btn btn-cancel" id="btn-cancel-manual">Cancelar</button>
+<button type="button" class="btn btn-primary" id="btn-submit-manual">Guardar movimiento</button>
+</div>
+</form>
+
+<div id="form-masiva" style="display:none;">
+<div class="form-row">
+<label>Pegá varias filas (una por línea)</label>
+<div class="hint" style="margin-bottom:8px;">Formato: tipo,entidad,monto,fecha(AAAA-MM-DD),cuenta,subconcepto,meses(AAAA-MM;AAAA-MM),iva(0/21/10.5),facturaRef<br>Ej: egreso,Proveedor SA,15000,2026-08-05,Banco Galicia,Insumos,2026-08,21,0001-00004521</div>
+<textarea id="f-masiva" rows="8" placeholder="egreso,Proveedor SA,15000,2026-08-05,Banco Galicia,Insumos,2026-08,21,0001-00004521"></textarea>
+</div>
+<div class="modal-actions">
+<button type="button" class="btn btn-cancel" id="btn-cancel-masiva">Cancelar</button>
+<button type="button" class="btn btn-primary" id="btn-submit-masiva">Cargar filas</button>
+</div>
+</div>
+
+<form id="form-factura" style="display:none;">
+<div class="form-row">
+<label>Tipo</label>
+<div class="radio-group" id="tipofact-group">
+<label class="checked" data-val="emitida">Emitida (a cobrar)</label>
+<label data-val="recibida">Recibida (a pagar)</label>
+</div>
+</div>
+<div class="form-grid">
+<div class="form-row">
+<label>Entidad</label>
+<input type="text" id="ff-entidad" placeholder="Cliente / proveedor">
+</div>
+<div class="form-row">
+<label>Monto (incluye IVA)</label>
+<input type="number" id="ff-monto" step="0.01" placeholder="0.00">
+</div>
+</div>
+<div class="form-grid">
+<div class="form-row">
+<label>Fecha de emisión</label>
+<input type="date" id="ff-fecha">
+</div>
+<div class="form-row">
+<label>N° de factura</label>
+<input type="text" id="ff-numero" placeholder="Ej: 0001-00001234">
+</div>
+</div>
+<div class="form-row">
+<label>Meses de producción</label>
+<div class="mes-add-row">
+<input type="month" id="ff-mesprod-input">
+<button type="button" id="btn-add-fact-mes">+ Agregar</button>
+</div>
+<div class="meses-chips" id="fact-meses-chips"></div>
+</div>
+<div class="form-grid">
+<div class="form-row">
+<label>IVA</label>
+<select id="ff-iva">
+<option value="0">Sin IVA</option>
+<option value="21">21%</option>
+<option value="10.5">10,5%</option>
+</select>
+</div>
+<div class="form-row">
+<label>Estado</label>
+<select id="ff-estado">
+<option value="pendiente">Pendiente</option>
+<option value="cobrada">Cobrada / Pagada</option>
+<option value="vencida">Vencida</option>
+</select>
+</div>
+</div>
+<div class="hint" style="margin-bottom:10px;">Cargar la factura no marca el dinero como recibido. Si la marcás como Cobrada/Pagada, te vamos a pedir la cuenta y dónde alocar el movimiento.</div>
+<div class="modal-actions">
+<button type="button" class="btn btn-cancel" id="btn-cancel-factura">Cancelar</button>
+<button type="button" class="btn btn-primary" id="btn-submit-factura">Guardar factura</button>
+</div>
+</form>
+</div>
+</div>
+
+<!-- ============ MODAL: elegir subcontratado ============ -->
+<div class="modal-overlay" id="modal-subc-overlay">
+<div class="modal" style="max-width:420px;">
+<h2>Elegir subcontratado</h2>
+<div class="modal-sub">Desplegable cerrado — nunca texto libre.</div>
+<div class="subc-list" id="subc-list"></div>
+<div class="form-row" style="margin-top:14px;">
+<label>Nuevo subcontratado</label>
+<input type="text" id="new-subc-name" placeholder="Nombre">
+</div>
+<div class="modal-actions">
+<button type="button" class="btn btn-cancel" id="btn-cancel-subc">Cancelar</button>
+<button type="button" class="btn btn-primary" id="btn-add-subc">Agregar y usar</button>
+</div>
+</div>
+</div>
+
+<!-- ============ MODAL: repartir por % ============ -->
+<div class="modal-overlay" id="modal-split-overlay">
+<div class="modal" style="max-width:420px;">
+<h2>Repartir movimiento por %</h2>
+<div class="modal-sub">Se va a dividir en dos movimientos, uno por columna.</div>
+<div class="form-row"><label>% Planta Propia</label><input type="number" id="split-planta" value="50" min="0" max="100"></div>
+<div class="form-row"><label>% Subcontratado</label><input type="number" id="split-sub" value="50" min="0" max="100"></div>
+<div class="hint">Tiene que sumar 100%.</div>
+<div class="modal-actions">
+<button type="button" class="btn btn-cancel" id="btn-cancel-split">Cancelar</button>
+<button type="button" class="btn btn-primary" id="btn-confirm-split">Repartir</button>
+</div>
+</div>
+</div>
+
+<!-- ============ MODAL: registrar cobro/pago de factura ============ -->
+<!-- ============ MODAL: Pago de IVA ============ -->
+<div class="modal-overlay" id="modal-pagoiva-overlay">
+<div class="modal" style="max-width:400px;">
+<h2>¿Es Pago de IVA?</h2>
+<div class="modal-sub">Este movimiento se clasificó como Ahorro. ¿Corresponde a un pago/transferencia al fondo de IVA en Allaria? Esto nos sirve para comparar el IVA que deberíamos reservar contra lo que realmente fondeaste.</div>
+<div class="modal-actions">
+<button type="button" class="btn btn-cancel" id="btn-pagoiva-no">No es pago de IVA</button>
+<button type="button" class="btn btn-primary" id="btn-pagoiva-si">Sí, es pago de IVA</button>
+</div>
+</div>
+</div>
+
+<!-- ============ MODAL: gestionar Retiros y Ahorros ============ -->
+<div class="modal-overlay" id="modal-ra-overlay">
+<div class="modal" style="max-width:520px;">
+<h2>Retiros &amp; Ahorros</h2>
+<div class="modal-sub">Común a Planta Propia y Subcontratados — no pertenece a ninguna columna. Podés volver a "Gastos a Clasificar", editar o borrar cada uno.</div>
+<div id="ra-list"></div>
+<div class="modal-actions">
+<button type="button" class="btn btn-cancel" id="btn-cerrar-ra">Cerrar</button>
+</div>
+</div>
+</div>
+
+<div class="modal-overlay" id="modal-cobro-overlay">
+<div class="modal" style="max-width:480px;">
+<h2>Registrar cobro / pago</h2>
+<div class="modal-sub">Esto va a crear el movimiento correspondiente.</div>
+<div class="form-row"><label>Cuenta</label><select id="cobro-cuenta"></select></div>
+<div class="form-row"><label>Fecha</label><input type="date" id="cobro-fecha"></div>
+<div class="form-row">
+<label>¿Dónde va?</label>
+<div class="asig-group" id="cobro-asig-group">
+<button type="button" class="asig-btn active" data-val="sin_clasificar">Decidir después</button>
+<button type="button" class="asig-btn" data-val="planta">⚡ 100% Planta Propia</button>
+<button type="button" class="asig-btn" data-val="split">↔ Repartir %</button>
+<button type="button" class="asig-btn" data-val="subcontratado">⚡ 100% Subcontratados</button>
+</div>
+</div>
+<div class="form-row" id="cobro-split-row" style="display:none;">
+<div class="form-grid">
+<div><label>% Planta Propia</label><input type="number" id="cobro-split-planta" value="50" min="0" max="100"></div>
+<div><label>% Subcontratado</label><input type="number" id="cobro-split-sub" value="50" min="0" max="100"></div>
+</div>
+</div>
+<div class="form-row" id="cobro-sub-row" style="display:none;">
+<label>Subcontratado</label>
+<select id="cobro-subcontratado-select"></select>
+<input type="text" id="cobro-subcontratado-new" placeholder="Nombre del subcontratado nuevo" style="margin-top:8px;display:none;">
+</div>
+<div class="modal-actions">
+<button type="button" class="btn btn-cancel" id="btn-cancel-cobro">Cancelar</button>
+<button type="button" class="btn btn-primary" id="btn-confirm-cobro">Confirmar</button>
+</div>
+</div>
+</div>
+
+<!-- ============ MODAL: debug / ver estado guardado ============ -->
+<!-- ============ MODAL: confirmacion generica (reemplaza confirm() nativo) ============ -->
+<div class="modal-overlay" id="modal-confirm-overlay">
+<div class="modal" style="max-width:400px;">
+<h2 id="confirm-title">Confirmar</h2>
+<div class="modal-sub" id="confirm-text"></div>
+<div class="modal-actions">
+<button type="button" class="btn btn-cancel" id="btn-confirm-cancelar">Cancelar</button>
+<button type="button" class="btn btn-primary" id="btn-confirm-aceptar">Confirmar</button>
+</div>
+</div>
+</div>
+
+<div class="modal-overlay" id="modal-debug-overlay">
+<div class="modal" style="max-width:700px;">
+<h2>Datos guardados</h2>
+<div class="modal-sub">Esto es exactamente lo que hay en el almacenamiento ahora mismo. Copiá y pegame el texto si algo no cierra, o pegá acá abajo datos de otra versión para restaurarlos.</div>
+<div class="form-row"><label>Resumen</label><div id="debug-resumen" class="hint" style="font-size:12.5px;"></div></div>
+<textarea id="debug-json" rows="14" style="font-family:var(--font-mono);font-size:11px;"></textarea>
+<div class="hint" id="import-hint" style="margin-top:6px;">Para restaurar datos: borrá el contenido de arriba, pegá el JSON completo de otra versión, y tocá "Importar".</div>
+<div id="import-confirm-box" style="display:none;margin-top:10px;padding:12px;border-radius:var(--radius-sm);background:var(--danger-soft);border:1px solid var(--danger-line);">
+<div id="import-confirm-text" style="font-size:13px;color:var(--text);margin-bottom:10px;"></div>
+<button type="button" class="btn btn-cancel" id="btn-import-cancelar" style="margin-right:8px;">Cancelar</button>
+<button type="button" class="btn btn-primary" id="btn-import-confirmar">Sí, reemplazar datos</button>
+</div>
+<div class="modal-actions">
+<button type="button" class="btn btn-cancel" id="btn-cerrar-debug">Cerrar</button>
+<button type="button" class="btn btn-cancel" id="btn-copiar-debug">Copiar</button>
+<button type="button" class="btn btn-primary" id="btn-importar-debug">Importar</button>
+</div>
+</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+"use strict";
+
+const ICONS = {
+trendUp:'<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>',
+arrowOut:'<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>',
+wallet:'<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"></path><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"></path><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"></path></svg>',
+card:'<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>',
+edit:'<svg class="ico" style="width:14px;height:14px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>',
+trash:'<svg class="ico" style="width:14px;height:14px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path></svg>'
+};
+
+const STORAGE_KEY = "lubacom-gestion-financiera-v3";
+const DEFAULT_STATE = {
+cuentas: ["Banco Macro","Banco Galicia","Allaria + Yoel","Allaria + Luba","Mercado Pago"],
+subcontratados: [],
+categorias: [],
+subconceptos: [],
+movimientos: [],
+facturas: []
+};
+let STATE = JSON.parse(JSON.stringify(DEFAULT_STATE));
+let editingId = null;
+let factEditingId = null;
+let pendingSubcTargetId = null;
+let pendingSplitId = null;
+let selectedMonths = new Set();
+const MESES_ES = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
+const hoy = new Date();
+let periodoYear = hoy.getFullYear();
+let periodoMonth = hoy.getMonth() + 1; // 1-12
+function periodoStr(){ return periodoYear + "-" + String(periodoMonth).padStart(2,"0"); }
+function updatePeriodLabel(){
+document.getElementById("period-label").textContent = MESES_ES[periodoMonth-1] + " " + periodoYear;
+}
+document.getElementById("btn-prev-mes").addEventListener("click", function(){
+periodoMonth--; if(periodoMonth < 1){ periodoMonth = 12; periodoYear--; }
+updatePeriodLabel(); renderBoard();
+});
+document.getElementById("btn-next-mes").addEventListener("click", function(){
+periodoMonth++; if(periodoMonth > 12){ periodoMonth = 1; periodoYear++; }
+updatePeriodLabel(); renderBoard();
+});
+let movMeses = [];
+let factMeses = [];
+let movAsignacion = "sin_clasificar";
+let retiroAhorroVal = "";
+let linkedFacturaId = null;
+let pendingCobroFacturaId = null;
+
+function uid(){
+return (crypto && crypto.randomUUID) ? crypto.randomUUID() : ("id-" + Date.now() + "-" + Math.random().toString(16).slice(2));
+}
+
+function money(n){
+if (isNaN(n)) n = 0;
+return new Intl.NumberFormat("es-AR", {style:"currency", currency:"ARS", maximumFractionDigits:0}).format(n);
+}
+
+function fmtDate(iso){
+if(!iso) return "—";
+try{
+const p = iso.split("-");
+return p[2] + "/" + p[1] + "/" + p[0];
+}catch(e){ return iso; }
+}
+
+function toast(msg){
+const t = document.getElementById("toast");
+t.textContent = msg;
+t.style.display = "block";
+clearTimeout(t._timer);
+t._timer = setTimeout(function(){ t.style.display="none"; }, 2600);
+}
+
+function confirmDialog(mensaje, titulo){
+return new Promise(function(resolve){
+document.getElementById("confirm-title").textContent = titulo || "Confirmar";
+document.getElementById("confirm-text").textContent = mensaje;
+const overlay = document.getElementById("modal-confirm-overlay");
+overlay.classList.add("open");
+const btnOk = document.getElementById("btn-confirm-aceptar");
+const btnCancel = document.getElementById("btn-confirm-cancelar");
+function limpiar(){
+overlay.classList.remove("open");
+btnOk.removeEventListener("click", onOk);
+btnCancel.removeEventListener("click", onCancel);
+}
+function onOk(){ limpiar(); resolve(true); }
+function onCancel(){ limpiar(); resolve(false); }
+btnOk.addEventListener("click", onOk);
+btnCancel.addEventListener("click", onCancel);
+});
+}
+
+function escapeHtml(str){
+if(str==null) return "";
+return String(str).replace(/[&<>"']/g, function(c){
+return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+});
+}
+
+const SUPABASE_URL = "https://zeinohbtlorwomwiguax.supabase.co";
+const SUPABASE_KEY = "sb_publishable_Jo5yF9fsbiXKDlSLythQIA_K_nKfQ39";
+let supaClient = null;
+
+function mostrarDiagnostico(texto, ok){
+const el = document.getElementById("supabase-diag");
+el.style.display = "block";
+el.style.background = ok ? "#DEF7E9" : "#FBE2DE";
+el.style.color = ok ? "#0C7A3F" : "#B4271A";
+el.style.border = "1px solid " + (ok ? "#A7E7C4" : "#F3B3AA");
+el.textContent = texto;
+}
+
+if (typeof window.supabase === "undefined"){
+mostrarDiagnostico("⚠ SUPABASE-DIAG: la librería @supabase/supabase-js no cargó (window.supabase es undefined). Puede ser que el CDN esté bloqueado al abrir el archivo local. Probá subir el archivo a GitHub Pages y abrirlo desde ahí.", false);
+} else {
+try{
+supaClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+mostrarDiagnostico("Librería cargada y cliente creado. Probando conexión real…", true);
+supaClient.from("lubacom_estado").select("id").eq("id",1).single().then(function(res){
+if(res.error){
+mostrarDiagnostico("⚠ SUPABASE-DIAG: conectó pero la consulta falló → " + res.error.message + " (código: " + (res.error.code||"?") + ")", false);
+} else {
+mostrarDiagnostico("✓ SUPABASE-DIAG: conexión OK, fila encontrada. Todo bien.", true);
+}
+}).catch(function(e){
+mostrarDiagnostico("⚠ SUPABASE-DIAG: excepción al consultar → " + e.message, false);
+});
+}catch(e){
+mostrarDiagnostico("⚠ SUPABASE-DIAG: error al crear el cliente → " + e.message, false);
+}
+}
+
+let isSaving = false;
+let saveQueued = false;
+let ultimoUpdatedAt = null;
+async function saveState(){
+if(isSaving){ saveQueued = true; return; }
+isSaving = true;
+await performSave();
+isSaving = false;
+if(saveQueued){
+saveQueued = false;
+await saveState();
+}
+}
+async function performSave(){
+const statusEl = document.getElementById("storage-status");
+const snapshot = JSON.stringify(STATE);
+try{ localStorage.setItem(STORAGE_KEY, snapshot); }catch(e){  }
+if(supaClient){
+try{
+const nuevaFecha = new Date().toISOString();
+const { error } = await supaClient.from("lubacom_estado")
+.update({ data: STATE, updated_at: nuevaFecha })
+.eq("id", 1);
+if(error) throw error;
+ultimoUpdatedAt = nuevaFecha;
+statusEl.textContent = "Guardado ✓ (compartido, Supabase)";
+return;
+}catch(e){
+console.error("Error guardando en Supabase:", e);
+statusEl.textContent = "Sin conexión a Supabase — guardado solo local.";
+return;
+}
+}
+statusEl.textContent = "Guardado solo en este navegador.";
+}
+
+async function loadState(){
+let loaded = null;
+if(supaClient){
+try{
+const { data, error } = await supaClient.from("lubacom_estado").select("data, updated_at").eq("id", 1).single();
+if(error) throw error;
+if(data && data.data && Object.keys(data.data).length){
+loaded = data.data;
+ultimoUpdatedAt = data.updated_at;
+}
+}catch(e){
+console.error("Error leyendo de Supabase, uso respaldo local:", e);
+}
+}
+if (!loaded){
+try{
+const raw = localStorage.getItem(STORAGE_KEY);
+if (raw) loaded = JSON.parse(raw);
+}catch(e){  }
+}
+if (loaded){
+STATE = Object.assign({}, DEFAULT_STATE, loaded);
+if(!Array.isArray(STATE.cuentas)) STATE.cuentas = DEFAULT_STATE.cuentas.slice();
+if(!Array.isArray(STATE.subcontratados)) STATE.subcontratados = [];
+if(!Array.isArray(STATE.categorias)) STATE.categorias = [];
+if(!Array.isArray(STATE.subconceptos)) STATE.subconceptos = [];
+if(!Array.isArray(STATE.movimientos)) STATE.movimientos = [];
+if(!Array.isArray(STATE.facturas)) STATE.facturas = [];
+}
+const idxGenerica = STATE.cuentas.indexOf("Allaria +");
+if (idxGenerica !== -1){
+STATE.cuentas.splice(idxGenerica, 1);
+["Allaria + Yoel","Allaria + Luba"].forEach(function(c){
+if (STATE.cuentas.indexOf(c) === -1) STATE.cuentas.push(c);
+});
+}
+["Suscripción","Rescate"].forEach(function(cat){
+if (STATE.categorias.indexOf(cat) === -1) STATE.categorias.push(cat);
+});
+}
+
+document.getElementById("navlist").addEventListener("click", function(e){
+const item = e.target.closest(".navitem");
+if(!item) return;
+document.querySelectorAll(".navitem").forEach(function(n){ n.classList.remove("active"); });
+item.classList.add("active");
+document.querySelectorAll(".view").forEach(function(v){ v.classList.remove("active"); });
+document.getElementById("view-"+item.dataset.view).classList.add("active");
+renderAll();
+});
+
+function groupByKey(movs, keyFn){
+const map = new Map();
+movs.forEach(function(m){
+const k = keyFn(m);
+if(!map.has(k)) map.set(k, []);
+map.get(k).push(m);
+});
+return map;
+}
+
+const TASA_IMP_DEBCRED = 0.006; // 0,6% — Impuesto a los Débitos y Créditos Bancarios
+const TASA_GANANCIAS = 0.008; // 0,8% — Retención de Ganancias sobre ingresos (general)
+const CUENTAS_EXENTAS = ["allaria + yoel"]; // exentas de ambos impuestos
+
+function cuentaExenta(cuenta){
+return CUENTAS_EXENTAS.indexOf((cuenta||"").trim().toLowerCase()) !== -1;
+}
+function esMovimientoFondo(m){
+const cat = (m.categoria||"").trim().toLowerCase();
+return cat==="suscripción" || cat==="suscripcion" || cat==="rescate";
+}
+
+// Débito/Crédito: solo entradas y salidas normales — no aplica a cuentas exentas ni a Suscripción/Rescate.
+function impuestoDebCredFor(m){
+if(cuentaExenta(m.cuenta) || esMovimientoFondo(m)) return 0;
+return (Number(m.monto)||0) * TASA_IMP_DEBCRED;
+}
+// Ganancias: 0,8% en ingresos normales. Nunca en cuentas exentas ni en Suscripción/Rescate.
+function retencionGananciasFor(m){
+if(cuentaExenta(m.cuenta) || esMovimientoFondo(m)) return 0;
+if(m.tipo==="ingreso") return (Number(m.monto)||0) * TASA_GANANCIAS;
+return 0;
+}
+
+function netOf(movs){
+let ingreso=0, egreso=0, impuesto=0, retencionGanancias=0;
+movs.forEach(function(m){
+const v = Number(m.monto)||0;
+if(m.tipo==="ingreso") ingreso += v; else egreso += v;
+impuesto += impuestoDebCredFor(m);
+retencionGanancias += retencionGananciasFor(m);
+});
+return {ingreso: ingreso, egreso: egreso, impuesto: impuesto, retencionGanancias: retencionGanancias, neto: ingreso - egreso - impuesto - retencionGanancias};
+}
+
+function ivaAmount(monto, iva){
+const m = Number(monto)||0;
+if (iva === "21") return m * 21/121;
+if (iva === "10.5") return m * 10.5/110.5;
+return 0;
+}
+
+function computeKPIs(){
+const enPeriodo = function(m){ return (m.fecha||"").slice(0,7)===periodoStr(); };
+const planta = netOf(STATE.movimientos.filter(function(m){ return m.destino==="planta" && enPeriodo(m); })).neto;
+const sub = netOf(STATE.movimientos.filter(function(m){ return m.destino==="subcontratado" && enPeriodo(m); })).neto;
+const retirosNet = netOf(STATE.movimientos.filter(function(m){ return m.destino==="retiro" && enPeriodo(m); }));
+const retiros = retirosNet.egreso - retirosNet.ingreso;
+const saldoCuentas = STATE.cuentas.reduce(function(acc, c){
+const n = netOf(STATE.movimientos.filter(function(m){ return m.cuenta===c; })).neto;
+return acc + n;
+}, 0);
+const ivaDebito = STATE.movimientos.filter(function(m){ return m.tipo==="ingreso"; })
+.reduce(function(acc, m){ return acc + ivaAmount(m.monto, m.iva); }, 0);
+const ivaCredito = STATE.movimientos.filter(function(m){ return m.tipo==="egreso"; })
+.reduce(function(acc, m){ return acc + ivaAmount(m.monto, m.iva); }, 0);
+const ivaReservado = ivaDebito;
+const posicionIva = ivaDebito - ivaCredito;
+const ivaFondeado = Math.abs(netOf(STATE.movimientos.filter(function(m){ return m.destino==="ahorro" && m.esPagoIva===true; })).neto);
+const diferenciaIva = ivaReservado - ivaFondeado;
+// Plata ya apartada como Ahorro (cualquier motivo) — ya no cuenta como disponible, aunque siga
+// físicamente en alguna cuenta. Además se resta la reserva teórica de IVA todavía no fondeada,
+// para no mostrar como "libre" algo que en la práctica está comprometido.
+const ahorroApartado = Math.max(0, netOf(STATE.movimientos.filter(function(m){ return m.destino==="ahorro"; })).neto);
+const disponibleBruto = saldoCuentas - ahorroApartado - ivaReservado;
+const disponible = Math.max(0, disponibleBruto);
+const totalesImpuestos = netOf(STATE.movimientos);
+const impuestoDebCred = totalesImpuestos.impuesto;
+const retencionGananciasTotal = totalesImpuestos.retencionGanancias;
+return {
+planta: planta, sub: sub, retiros: retiros, disponible: disponible, disponibleBruto: disponibleBruto,
+ahorroApartado: ahorroApartado,
+ivaReservado: ivaReservado, ivaFondeado: ivaFondeado, diferenciaIva: diferenciaIva,
+ivaDebito: ivaDebito, ivaCredito: ivaCredito, posicionIva: posicionIva,
+impuestoDebCred: impuestoDebCred, retencionGananciasTotal: retencionGananciasTotal
+};
+}
+
+function kpiCard(icon, accentVar, softVar, label, valueHtml){
+return '<div class="kpi-card" style="--panel-border:var(' + accentVar + '-line, var(--border))">' +
+'<div class="kpi-icon" style="--panel-soft:var(' + softVar + ');--accent:var(' + accentVar + ')">' + icon + '</div>' +
+'<div><div class="kpi-label">' + label + '</div><div class="kpi-value ' + '">' + valueHtml + '</div></div>' +
+'</div>';
+}
+
+function renderKPIs(){
+const k = computeKPIs();
+const wrap = document.getElementById("kpi-strip");
+wrap.innerHTML =
+'<div class="kpi-card" style="--panel-border:var(--planta-line)">' +
+'<div class="kpi-icon" style="--panel-soft:var(--planta-soft);--accent:var(--planta)">' + ICONS.trendUp + '</div>' +
+'<div><div class="kpi-label">Ganancia Planta Propia (mes)</div><div class="kpi-value ' + (k.planta>=0?'pos':'neg') + '">' + money(k.planta) + '</div></div>' +
+'</div>' +
+'<div class="kpi-card" style="--panel-border:var(--sub-line)">' +
+'<div class="kpi-icon" style="--panel-soft:var(--sub-soft);--accent:var(--sub)">' + ICONS.trendUp + '</div>' +
+'<div><div class="kpi-label">Ganancia Subcontratados (mes)</div><div class="kpi-value ' + (k.sub>=0?'pos':'neg') + '">' + money(k.sub) + '</div></div>' +
+'</div>' +
+'<div class="kpi-card" style="--panel-border:var(--neutral-line)">' +
+'<div class="kpi-icon" style="--panel-soft:var(--neutral-soft);--accent:var(--neutral)">' + ICONS.arrowOut + '</div>' +
+'<div><div class="kpi-label">Retiros (mes)</div><div class="kpi-value">' + money(k.retiros) + '</div></div>' +
+'</div>' +
+'<div class="kpi-card" style="--panel-border:var(--sub-line)">' +
+'<div class="kpi-icon" style="--panel-soft:var(--sub-soft);--accent:var(--sub)">' + ICONS.card + '</div>' +
+'<div><div class="kpi-label">IVA a reservar (fondo Allaria)</div><div class="kpi-value">' + money(k.ivaReservado) + '</div>' +
+'<div class="kpi-subline">Fondeado real: ' + money(k.ivaFondeado) + ' &nbsp;·&nbsp; Diferencia: <span class="' + (k.diferenciaIva>0?'neg':'pos') + '">' + money(k.diferenciaIva) + '</span></div></div>' +
+'</div>' +
+'<div class="kpi-card" style="--panel-border:var(--brand-line)">' +
+'<div class="kpi-icon" style="--panel-soft:var(--brand-soft);--accent:var(--brand)">' + ICONS.wallet + '</div>' +
+'<div><div class="kpi-label">Disponible (libre de ahorros e IVA)</div><div class="kpi-value ' + (k.disponible>0?'pos':'') + '">' + money(k.disponible) + '</div>' +
+'<div class="kpi-subline">' + (k.ahorroApartado>0 ? ('Apartado en Ahorros: ' + money(k.ahorroApartado) + '. ') : '') + (k.ivaReservado>0 ? ('Reservado para IVA: ' + money(k.ivaReservado) + '.') : '') + '</div></div>' +
+'</div>';
+}
+
+function renderKPIsFacturas(){
+const k = computeKPIs();
+const wrap = document.getElementById("kpi-strip-facturas");
+wrap.innerHTML =
+'<div class="kpi-card" style="--panel-border:var(--neutral-line)">' +
+'<div class="kpi-icon" style="--panel-soft:var(--neutral-soft);--accent:var(--neutral)">' + ICONS.arrowOut + '</div>' +
+'<div><div class="kpi-label">Impuesto Débitos y Créditos (0,6%)</div><div class="kpi-value">' + money(k.impuestoDebCred) + '</div>' +
+'<div class="kpi-subline">Excepto Allaria + Yoel, Suscripción y Rescate.</div></div>' +
+'</div>' +
+'<div class="kpi-card" style="--panel-border:var(--danger-line)">' +
+'<div class="kpi-icon" style="--panel-soft:var(--danger-soft);--accent:var(--danger)">' + ICONS.trendUp + '</div>' +
+'<div><div class="kpi-label">Retención de Ganancias</div><div class="kpi-value">' + money(k.retencionGananciasTotal) + '</div>' +
+'<div class="kpi-subline">0,8% sobre ingresos. Exento: Allaria + Yoel y Suscripción/Rescate.</div></div>' +
+'</div>' +
+'<div class="kpi-card" style="--panel-border:var(--planta-line)">' +
+'<div class="kpi-icon" style="--panel-soft:var(--planta-soft);--accent:var(--planta)">' + ICONS.card + '</div>' +
+'<div><div class="kpi-label">IVA a Favor (crédito fiscal)</div><div class="kpi-value pos">' + money(k.ivaCredito) + '</div>' +
+'<div class="kpi-subline">IVA de egresos (compras) — reduce lo que se debe a AFIP.</div></div>' +
+'</div>' +
+'<div class="kpi-card" style="--panel-border:var(--sub-line)">' +
+'<div class="kpi-icon" style="--panel-soft:var(--sub-soft);--accent:var(--sub)">' + ICONS.wallet + '</div>' +
+'<div><div class="kpi-label">Posición de IVA (débito − crédito)</div><div class="kpi-value ' + (k.posicionIva>=0?'neg':'pos') + '">' + money(k.posicionIva) + '</div>' +
+'<div class="kpi-subline">' + (k.posicionIva>=0?'Neto a pagar a AFIP.':'Saldo técnico a favor.') + '</div></div>' +
+'</div>';
+}
+
+function renderBalancesStrip(){
+const wrap = document.getElementById("balances-strip");
+wrap.innerHTML = STATE.cuentas.map(function(c){
+const movsCuenta = STATE.movimientos.filter(function(m){ return m.cuenta===c; });
+const total = netOf(movsCuenta).neto;
+const ahorroCuenta = netOf(movsCuenta.filter(function(m){ return m.destino==="ahorro"; })).neto;
+// Si el ahorro entró como ingreso (neto positivo), esa plata no es libre: se resta.
+// Si el ahorro ya salió como egreso (neto negativo), el total ya la refleja: no se resta de nuevo.
+const libre = total - Math.max(0, ahorroCuenta);
+const obs = ahorroCuenta > 0
+? '<div class="obs">Apartado en Ahorro: ' + money(ahorroCuenta) + '</div>'
+: '';
+return '<div class="balance-chip">' +
+'<div class="bicon">' + ICONS.card + '</div>' +
+'<div><div class="name">' + escapeHtml(c) + '</div><div class="val ' + (libre>=0?'pos':'neg') + '">' + money(libre) + '</div>' + obs + '</div>' +
+'</div>';
+}).join("");
+}
+
+function renderThermoGastosPorPagar(){
+const gastosPorPagar = STATE.facturas
+.filter(function(f){ return f.tipo==="recibida" && f.estado!=="cobrada"; })
+.reduce(function(acc,f){ return acc + (Number(f.monto)||0); }, 0);
+const disponible = computeKPIs().disponible;
+const fillEl = document.getElementById("thermo-fill");
+const hintEl = document.getElementById("thermo-hint");
+document.getElementById("thermo-total").textContent = money(gastosPorPagar);
+document.getElementById("thermo-covered").textContent = money(Math.max(0, Math.min(disponible, gastosPorPagar)));
+if(gastosPorPagar <= 0){
+fillEl.style.width = "100%";
+fillEl.className = "thermo-fill";
+hintEl.textContent = "No hay deudas por compras pendientes (Facturas → Por pagar).";
+return;
+}
+const pct = Math.max(0, Math.min(100, (disponible / gastosPorPagar) * 100));
+fillEl.style.width = pct + "%";
+fillEl.className = "thermo-fill" + (pct>=100?"":(pct>=50?" warn":" danger"));
+hintEl.textContent = "Cobertura estimada con el Disponible actual: " + Math.round(pct) + "%. (Pendiente: se va a completar con el detalle de Cash Flow.)";
+}
+
+function renderCentralCol(){
+const body = document.getElementById("col-central-body");
+const movs = STATE.movimientos.filter(function(m){ return m.destino==="sin_clasificar" && (m.fecha||"").slice(0,7)===periodoStr(); });
+document.getElementById("count-sinclasificar").textContent = movs.length;
+if(!movs.length){
+body.innerHTML = '<div class="empty-col">No hay movimientos pendientes de clasificar.</div>';
+return;
+}
+body.innerHTML = movs.slice().sort(function(a,b){ return (b.fecha||"").localeCompare(a.fecha||""); }).map(function(m){
+return '<div class="unclassified-card">' +
+'<div class="uc-top">' +
+'<div>' +
+'<div class="uc-entidad">' + escapeHtml(m.entidad||"(sin entidad)") + '</div>' +
+'<div class="uc-meta">' + fmtDate(m.fecha) + ' · ' + escapeHtml(m.cuenta||"—") + (m.categoria?(" · "+escapeHtml(m.categoria)):"") + (m.subconcepto?(" · "+escapeHtml(m.subconcepto)):"") + '</div>' +
+'</div>' +
+'<div class="uc-amt ' + (m.tipo==='ingreso'?'pos':'neg') + '">' + (m.tipo==='ingreso'?'+':'−') + money(m.monto) + '</div>' +
+'</div>' +
+'<div class="uc-primary-row">' +
+'<button class="arrow-btn" data-act="split" data-id="' + m.id + '" title="Repartir por %">←</button>' +
+'<button class="btn100 btn100-planta" data-act="planta100" data-id="' + m.id + '">⚡ 100% Planta Propia</button>' +
+'<button class="btn100 btn100-sub" data-act="sub100" data-id="' + m.id + '">⚡ 100% Subcontratados</button>' +
+'<button class="arrow-btn" data-act="split" data-id="' + m.id + '" title="Repartir por %">→</button>' +
+'</div>' +
+'<div class="uc-secondary-row">' +
+'<button class="btn-retiro" data-act="retiro" data-id="' + m.id + '">🎩 Retiro</button>' +
+'<button class="btn-ahorro" data-act="ahorro" data-id="' + m.id + '">🐷 Ahorro</button>' +
+'<button class="icon-btn" data-act="editar" data-id="' + m.id + '" title="Editar">' + ICONS.edit + '</button>' +
+'<button class="icon-btn danger" data-act="borrar" data-id="' + m.id + '" title="Borrar">' + ICONS.trash + '</button>' +
+'</div>' +
+'</div>';
+}).join("");
+}
+
+function renderClassifiedCol(destino, bodyId, countId){
+const body = document.getElementById(bodyId);
+const movs = STATE.movimientos.filter(function(m){ return m.destino===destino && (m.fecha||"").slice(0,7)===periodoStr(); });
+document.getElementById(countId).textContent = movs.length;
+if(!movs.length){
+body.innerHTML = '<div class="empty-col">Todavía no hay movimientos acá.</div>';
+return;
+}
+const keyFn = destino==="subcontratado"
+? function(m){ return m.subcontratadoId || "sin-asignar"; }
+: function(m){ return (m.entidad||"(sin entidad)").trim().toLowerCase(); };
+const groups = groupByKey(movs, keyFn);
+let html = "";
+groups.forEach(function(gmovs, key){
+const n = netOf(gmovs);
+let label;
+if(destino==="subcontratado"){
+const sc = STATE.subcontratados.find(function(s){ return s.id===key; });
+label = sc ? sc.nombre : (key==="sin-asignar" ? "Sin asignar" : "Subcontratado eliminado");
+} else {
+label = gmovs[0].entidad || "(sin entidad)";
+}
+const detailRows = gmovs.slice().sort(function(a,b){ return (b.fecha||"").localeCompare(a.fecha||""); }).map(function(m){
+return '<div class="detail-row">' +
+'<span>' + fmtDate(m.fecha) + '</span>' +
+'<span class="amt ' + (m.tipo==='ingreso'?'pos':'neg') + '">' + (m.tipo==='ingreso'?'+':'−') + money(m.monto) + '</span>' +
+'<span class="acts"><a data-act="declasificar" data-id="' + m.id + '">quitar</a> <button class="icon-btn" data-act="editar" data-id="' + m.id + '" title="Editar">' + ICONS.edit + '</button> <button class="icon-btn danger" data-act="borrar" data-id="' + m.id + '" title="Borrar">' + ICONS.trash + '</button></span>' +
+'</div>';
+}).join("");
+const soloUno = gmovs.length === 1;
+const actionsHtml = soloUno
+? '<button class="icon-btn" data-act="declasificar" data-id="' + gmovs[0].id + '" title="Volver a Gastos a Clasificar">↺</button> ' +
+'<button class="icon-btn" data-act="editar" data-id="' + gmovs[0].id + '" title="Editar">' + ICONS.edit + '</button> ' +
+'<button class="icon-btn danger" data-act="borrar" data-id="' + gmovs[0].id + '" title="Borrar">' + ICONS.trash + '</button>'
+: '<button class="chip-btn" data-act="toggle-detail" data-key="' + destino + '-' + escapeHtml(String(key)) + '">Ver detalle</button>';
+html += '<div class="group-card">' +
+'<div class="group-top">' +
+'<div>' +
+'<div class="group-name">' + escapeHtml(label) + '</div>' +
+'<div class="group-meta">' + gmovs.length + ' mov. · Ing ' + money(n.ingreso) + ' / Egr ' + money(n.egreso) + '</div>' +
+'</div>' +
+'<div class="group-net ' + (n.neto>=0?'net-pos':'net-neg') + '">' + money(Math.abs(n.neto)) + '</div>' +
+'</div>' +
+'<div class="group-actions">' + actionsHtml + '</div>' +
+(soloUno ? '' : '<div class="detail-list" data-key="' + destino + '-' + escapeHtml(String(key)) + '">' + detailRows + '</div>') +
+'</div>';
+});
+body.innerHTML = html;
+}
+
+function renderBoard(){
+renderBalancesStrip();
+renderThermoGastosPorPagar();
+renderRetirosAhorrosBar();
+renderCentralCol();
+renderClassifiedCol("planta", "col-planta-body", "count-planta");
+renderClassifiedCol("subcontratado", "col-sub-body", "count-sub");
+}
+
+function renderRetirosAhorrosBar(){
+document.getElementById("ra-count-retiro").textContent = STATE.movimientos.filter(function(m){ return m.destino==="retiro" && (m.fecha||"").slice(0,7)===periodoStr(); }).length;
+document.getElementById("ra-count-ahorro").textContent = STATE.movimientos.filter(function(m){ return m.destino==="ahorro" && (m.fecha||"").slice(0,7)===periodoStr(); }).length;
+}
+function renderRetirosAhorrosModal(){
+const list = document.getElementById("ra-list");
+const movs = STATE.movimientos.filter(function(m){ return (m.destino==="retiro" || m.destino==="ahorro") && (m.fecha||"").slice(0,7)===periodoStr(); });
+if(!movs.length){ list.innerHTML = '<div class="empty-col">No hay movimientos en Retiros ni Ahorros este mes.</div>'; return; }
+list.innerHTML = movs.slice().sort(function(a,b){ return (b.fecha||"").localeCompare(a.fecha||""); }).map(function(m){
+return '<div class="detail-row" style="padding:9px 0;">' +
+'<span>' + (m.destino==='retiro'?'🎩':'🐷') + ' ' + fmtDate(m.fecha) + ' · ' + escapeHtml(m.entidad||"—") + (m.esPagoIva?' <span class="badge badge-pend">IVA</span>':'') + '</span>' +
+'<span class="amt ' + (m.tipo==='ingreso'?'pos':'neg') + '">' + (m.tipo==='ingreso'?'+':'−') + money(m.monto) + '</span>' +
+'<span class="acts">' +
+'<button class="icon-btn" data-act="declasificar" data-id="' + m.id + '" title="Volver a Gastos a Clasificar">↺</button> ' +
+'<button class="icon-btn" data-act="editar" data-id="' + m.id + '" title="Editar">' + ICONS.edit + '</button> ' +
+'<button class="icon-btn danger" data-act="borrar" data-id="' + m.id + '" title="Borrar">' + ICONS.trash + '</button>' +
+'</span>' +
+'</div>';
+}).join("");
+}
+const raOverlay = document.getElementById("modal-ra-overlay");
+document.getElementById("btn-ver-retiros-ahorros").addEventListener("click", function(){
+renderRetirosAhorrosModal();
+raOverlay.classList.add("open");
+});
+document.getElementById("btn-cerrar-ra").addEventListener("click", function(){ raOverlay.classList.remove("open"); });
+document.getElementById("ra-list").addEventListener("click", function(e){
+const btn = e.target.closest("button[data-act]");
+if(!btn) return;
+const act = btn.dataset.act;
+const id = btn.dataset.id;
+if(act === "declasificar"){ setDestino(id, "sin_clasificar"); renderRetirosAhorrosModal(); }
+else if(act === "editar"){ raOverlay.classList.remove("open"); openEditModal(id); }
+else if(act === "borrar"){ borrarMovimiento(id); renderRetirosAhorrosModal(); }
+});
+
+document.getElementById("view-clasificacion").addEventListener("click", function(e){
+const toggleBtn = e.target.closest("[data-act='toggle-detail']");
+if(toggleBtn){
+const key = toggleBtn.dataset.key;
+const panel = document.querySelector('.detail-list[data-key="' + cssEscape(key) + '"]');
+if(panel) panel.classList.toggle("open");
+return;
+}
+const actBtn = e.target.closest("button[data-act], a[data-act]");
+if(!actBtn) return;
+const act = actBtn.dataset.act;
+const id = actBtn.dataset.id;
+if(act==="planta100"){ setDestino(id, "planta"); }
+else if(act==="sub100"){ openSubcModal(id); }
+else if(act==="retiro"){ setDestino(id, "retiro"); }
+else if(act==="ahorro"){ setDestino(id, "ahorro"); }
+else if(act==="split"){ openSplitModal(id); }
+else if(act==="editar"){ openEditModal(id); }
+else if(act==="borrar"){ borrarMovimiento(id); }
+else if(act==="declasificar"){ setDestino(id, "sin_clasificar"); }
+});
+
+function cssEscape(s){ return s.replace(/["\\]/g, "\\$&"); }
+
+function setDestino(id, destino){
+const m = STATE.movimientos.find(function(x){ return x.id===id; });
+if(!m) return;
+m.destino = destino;
+if(destino !== "subcontratado") m.subcontratadoId = null;
+saveAndRender();
+if(destino === "ahorro"){ askPagoIva(id); }
+}
+
+let pendingPagoIvaMovId = null;
+function askPagoIva(movId){
+pendingPagoIvaMovId = movId;
+document.getElementById("modal-pagoiva-overlay").classList.add("open");
+}
+document.getElementById("btn-pagoiva-si").addEventListener("click", function(){
+const m = STATE.movimientos.find(function(x){ return x.id===pendingPagoIvaMovId; });
+if(m) m.esPagoIva = true;
+document.getElementById("modal-pagoiva-overlay").classList.remove("open");
+saveAndRender();
+toast("Marcado como Pago de IVA.");
+});
+document.getElementById("btn-pagoiva-no").addEventListener("click", function(){
+const m = STATE.movimientos.find(function(x){ return x.id===pendingPagoIvaMovId; });
+if(m) m.esPagoIva = false;
+document.getElementById("modal-pagoiva-overlay").classList.remove("open");
+saveAndRender();
+});
+
+async function borrarMovimiento(id){
+const facturaVinculada = STATE.facturas.find(function(f){ return f.movimientoId === id; });
+if(facturaVinculada){
+const confirmMsg = "Este movimiento está vinculado a la factura " + facturaVinculada.numeroFactura + ". Si lo borrás, la factura vuelve a estado " + (facturaVinculada.estadoAnterior==="vencida"?"Vencida":"Pendiente") + ". ¿Confirmás?";
+const ok = await confirmDialog(confirmMsg, "Borrar movimiento vinculado");
+if(!ok) return;
+facturaVinculada.estado = facturaVinculada.estadoAnterior || "pendiente";
+facturaVinculada.movimientoId = null;
+facturaVinculada.estadoAnterior = null;
+} else {
+const ok = await confirmDialog("¿Borrar este movimiento? No se puede deshacer.", "Borrar movimiento");
+if(!ok) return;
+}
+STATE.movimientos = STATE.movimientos.filter(function(m){ return m.id!==id; });
+saveAndRender();
+toast(facturaVinculada ? "Movimiento borrado. La factura volvió a su estado anterior." : "Movimiento borrado.");
+}
+
+const subcOverlay = document.getElementById("modal-subc-overlay");
+function openSubcModal(movId){
+pendingSubcTargetId = movId;
+renderSubcList();
+subcOverlay.classList.add("open");
+}
+function renderSubcList(){
+const list = document.getElementById("subc-list");
+if(!STATE.subcontratados.length){
+list.innerHTML = '<div class="subc-item"><span style="color:var(--muted);">Todavía no hay subcontratados cargados.</span></div>';
+return;
+}
+list.innerHTML = STATE.subcontratados.map(function(s){
+return '<div class="subc-item">' +
+'<span class="subc-pick" data-id="' + s.id + '">' + escapeHtml(s.nombre) + '</span>' +
+'<button class="icon-btn danger" data-del="' + s.id + '" title="Eliminar">' + ICONS.trash + '</button>' +
+'</div>';
+}).join("");
+}
+document.getElementById("subc-list").addEventListener("click", async function(e){
+const pick = e.target.closest(".subc-pick");
+if(pick){
+assignSubcontratado(pendingSubcTargetId, pick.dataset.id);
+subcOverlay.classList.remove("open");
+return;
+}
+const del = e.target.closest("[data-del]");
+if(del){
+const ok = await confirmDialog("¿Eliminar este subcontratado de la lista?", "Eliminar subcontratado");
+if(ok){
+STATE.subcontratados = STATE.subcontratados.filter(function(s){ return s.id!==del.dataset.del; });
+saveState();
+renderSubcList();
+}
+}
+});
+document.getElementById("btn-add-subc").addEventListener("click", function(){
+const input = document.getElementById("new-subc-name");
+const name = input.value.trim();
+if(!name){ toast("Escribí un nombre."); return; }
+const newSubc = {id: uid(), nombre: name};
+STATE.subcontratados.push(newSubc);
+input.value = "";
+assignSubcontratado(pendingSubcTargetId, newSubc.id);
+subcOverlay.classList.remove("open");
+});
+document.getElementById("btn-cancel-subc").addEventListener("click", function(){ subcOverlay.classList.remove("open"); });
+
+function assignSubcontratado(movId, subcId){
+const m = STATE.movimientos.find(function(x){ return x.id===movId; });
+if(!m) return;
+m.destino = "subcontratado";
+m.subcontratadoId = subcId;
+saveAndRender();
+}
+
+const splitOverlay = document.getElementById("modal-split-overlay");
+function openSplitModal(movId){
+pendingSplitId = movId;
+document.getElementById("split-planta").value = 50;
+document.getElementById("split-sub").value = 50;
+splitOverlay.classList.add("open");
+}
+document.getElementById("btn-cancel-split").addEventListener("click", function(){ splitOverlay.classList.remove("open"); });
+document.getElementById("btn-confirm-split").addEventListener("click", function(){
+const pPlanta = Number(document.getElementById("split-planta").value)||0;
+const pSub = Number(document.getElementById("split-sub").value)||0;
+if(pPlanta + pSub !== 100){ toast("Tiene que sumar 100%."); return; }
+const orig = STATE.movimientos.find(function(x){ return x.id===pendingSplitId; });
+if(!orig) return;
+if(pPlanta > 0){
+const copyPlanta = Object.assign({}, orig, {id: uid(), monto: round2(orig.monto * pPlanta/100), destino:"planta"});
+STATE.movimientos.push(copyPlanta);
+}
+if(pSub > 0){
+const copySub = Object.assign({}, orig, {id: uid(), monto: round2(orig.monto * pSub/100), destino:"subcontratado", subcontratadoId:null});
+STATE.movimientos.push(copySub);
+}
+STATE.movimientos = STATE.movimientos.filter(function(m){ return m.id!==orig.id; });
+splitOverlay.classList.remove("open");
+saveAndRender();
+toast("Movimiento repartido. Asigná el subcontratado en la parte que corresponda.");
+});
+function round2(n){ return Math.round((Number(n)||0)*100)/100; }
+
+function renderMesesChips(containerId, arr){
+const el = document.getElementById(containerId);
+if(!arr.length){ el.innerHTML = '<span class="hint">Sin meses agregados todavía.</span>'; return; }
+el.innerHTML = arr.map(function(mo, i){
+return '<span class="mes-chip">' + mo + '<a data-idx="' + i + '" data-container="' + containerId + '">×</a></span>';
+}).join("");
+}
+document.getElementById("mov-meses-chips").addEventListener("click", mesChipRemoveHandler);
+document.getElementById("fact-meses-chips").addEventListener("click", mesChipRemoveHandler);
+function mesChipRemoveHandler(e){
+const a = e.target.closest("a[data-idx]");
+if(!a) return;
+const idx = Number(a.dataset.idx);
+if(a.dataset.container === "mov-meses-chips"){ movMeses.splice(idx,1); renderMesesChips("mov-meses-chips", movMeses); }
+else { factMeses.splice(idx,1); renderMesesChips("fact-meses-chips", factMeses); }
+}
+document.getElementById("btn-add-mov-mes").addEventListener("click", function(){
+const v = document.getElementById("f-mesprod-input").value;
+if(v && movMeses.indexOf(v)===-1){ movMeses.push(v); movMeses.sort(); renderMesesChips("mov-meses-chips", movMeses); }
+});
+document.getElementById("btn-add-fact-mes").addEventListener("click", function(){
+const v = document.getElementById("ff-mesprod-input").value;
+if(v && factMeses.indexOf(v)===-1){ factMeses.push(v); factMeses.sort(); renderMesesChips("fact-meses-chips", factMeses); }
+});
+
+const overlay = document.getElementById("modal-overlay");
+const formMovimiento = document.getElementById("form-movimiento");
+const formFactura = document.getElementById("form-factura");
+const tipoGroup = document.getElementById("tipo-group");
+const tipoFactGroup = document.getElementById("tipofact-group");
+
+function fillCuentaSelect(){
+const sel = document.getElementById("f-cuenta");
+sel.innerHTML = STATE.cuentas.map(function(c){
+return '<option value="' + escapeHtml(c) + '">' + escapeHtml(c) + '</option>';
+}).join("");
+}
+
+function fillSubcontratadoSelect(){
+const sel = document.getElementById("f-subcontratado-select");
+let html = STATE.subcontratados.map(function(s){
+return '<option value="' + s.id + '">' + escapeHtml(s.nombre) + '</option>';
+}).join("");
+html += '<option value="__new__">➕ Nuevo subcontratado…</option>';
+sel.innerHTML = html;
+document.getElementById("f-subcontratado-new").style.display = "none";
+document.getElementById("f-subcontratado-new").value = "";
+}
+document.getElementById("f-subcontratado-select").addEventListener("change", function(e){
+document.getElementById("f-subcontratado-new").style.display = e.target.value==="__new__" ? "block":"none";
+});
+function resolveSubcontratadoFromSelect(){
+const sel = document.getElementById("f-subcontratado-select");
+if(sel.value === "__new__"){
+const name = document.getElementById("f-subcontratado-new").value.trim();
+if(!name) return null;
+const nuevo = {id: uid(), nombre: name};
+STATE.subcontratados.push(nuevo);
+return nuevo.id;
+}
+return sel.value || null;
+}
+
+function fillSimpleListSelect(selectId, newInputId, listaKey, placeholderLabel){
+const sel = document.getElementById(selectId);
+let html = '<option value="">— ' + placeholderLabel + ' —</option>';
+html += STATE[listaKey].map(function(name){ return '<option value="' + escapeHtml(name) + '">' + escapeHtml(name) + '</option>'; }).join("");
+html += '<option value="__new__">➕ Nueva…</option>';
+sel.innerHTML = html;
+document.getElementById(newInputId).style.display = "none";
+document.getElementById(newInputId).value = "";
+}
+function resolveSimpleListSelect(selectId, newInputId, listaKey){
+const sel = document.getElementById(selectId);
+if(sel.value === "__new__"){
+const name = document.getElementById(newInputId).value.trim();
+if(!name) return "";
+if(STATE[listaKey].indexOf(name) === -1) STATE[listaKey].push(name);
+return name;
+}
+return sel.value || "";
+}
+document.getElementById("f-categoria-select").addEventListener("change", function(e){
+document.getElementById("f-categoria-new").style.display = e.target.value==="__new__" ? "block":"none";
+});
+document.getElementById("f-subconcepto-select").addEventListener("change", function(e){
+document.getElementById("f-subconcepto-new").style.display = e.target.value==="__new__" ? "block":"none";
+});
+function setSelectValueEnsuring(selectId, listaKey, value){
+const sel = document.getElementById(selectId);
+if(!value){ sel.value = ""; return; }
+if(STATE[listaKey].indexOf(value) === -1) STATE[listaKey].push(value);
+let opt = Array.prototype.find.call(sel.options, function(o){ return o.value===value; });
+if(!opt){
+opt = document.createElement("option");
+opt.value = value; opt.textContent = value;
+const nuevoOpt = sel.querySelector('option[value="__new__"]');
+sel.insertBefore(opt, nuevoOpt);
+}
+sel.value = value;
+}
+
+const asigGroup = document.getElementById("asig-group");
+asigGroup.addEventListener("click", function(e){
+const btn = e.target.closest(".asig-btn");
+if(!btn) return;
+movAsignacion = btn.dataset.val;
+asigGroup.querySelectorAll(".asig-btn").forEach(function(b){ b.classList.toggle("active", b===btn); });
+document.getElementById("asig-split-row").style.display = movAsignacion==="split" ? "block":"none";
+document.getElementById("asig-sub-row").style.display = (movAsignacion==="subcontratado" || movAsignacion==="split") ? "block":"none";
+if(movAsignacion==="subcontratado" || movAsignacion==="split") fillSubcontratadoSelect();
+});
+
+const retiroAhorroGroup = document.getElementById("retiro-ahorro-group");
+retiroAhorroGroup.addEventListener("click", function(e){
+const btn = e.target.closest(".asig-btn");
+if(!btn) return;
+retiroAhorroVal = btn.dataset.val;
+retiroAhorroGroup.querySelectorAll(".asig-btn").forEach(function(b){ b.classList.toggle("active", b===btn); });
+});
+
+function renderFacturaMatches(){
+const box = document.getElementById("factura-match-box");
+const list = document.getElementById("factura-match-list");
+const tipoMov = tipoGroup.dataset.value || "ingreso";
+const tipoFacturaEsperado = tipoMov === "ingreso" ? "emitida" : "recibida";
+const matches = STATE.facturas.filter(function(f){
+return f.estado !== "cobrada" && f.tipo === tipoFacturaEsperado;
+}).sort(function(a,b){ return (a.fechaEmision||"").localeCompare(b.fechaEmision||""); });
+if(!matches.length){ box.style.display = "none"; linkedFacturaId = null; return; }
+box.style.display = "block";
+list.innerHTML = matches.map(function(f){
+return '<span class="fact-match-chip' + (linkedFacturaId===f.id?' selected':'') + '" data-fid="' + f.id + '"><strong>' + escapeHtml(f.entidad) + '</strong> · ' + escapeHtml(f.numeroFactura) + ' · ' + money(f.monto) + ' · ' + fmtDate(f.fechaEmision) + '</span>';
+}).join("") + '<span class="fact-match-chip none' + (linkedFacturaId===null?' selected':'') + '" data-fid="">Ninguna, es nuevo</span>';
+}
+document.getElementById("factura-match-list").addEventListener("click", function(e){
+const chip = e.target.closest(".fact-match-chip");
+if(!chip) return;
+linkedFacturaId = chip.dataset.fid || null;
+if(linkedFacturaId){
+const f = STATE.facturas.find(function(x){ return x.id===linkedFacturaId; });
+if(f){
+document.getElementById("f-entidad").value = f.entidad;
+document.getElementById("f-monto").value = f.monto;
+document.getElementById("f-fecha").value = f.fechaEmision;
+document.getElementById("f-iva").value = f.iva || "0";
+document.getElementById("f-facturaref").value = f.numeroFactura;
+movMeses = (f.mesesProduccion||[]).slice();
+renderMesesChips("mov-meses-chips", movMeses);
+}
+} else {
+document.getElementById("f-entidad").value = "";
+document.getElementById("f-monto").value = "";
+document.getElementById("f-facturaref").value = "";
+}
+renderFacturaMatches();
+});
+tipoGroup.addEventListener("click", renderFacturaMatches);
+
+function switchPrimaryTab(tab){
+document.querySelectorAll("#modal-tabs-primary .modal-tab").forEach(function(t){ t.classList.toggle("active", t.dataset.primary===tab); });
+document.getElementById("modal-tabs-secondary").style.display = tab==="movimiento" ? "flex":"none";
+formFactura.style.display = tab==="factura" ? "block":"none";
+if(tab==="movimiento"){
+switchSecondaryTab("manual");
+document.getElementById("modal-subtext").textContent = "Plata que efectivamente entró o salió de una cuenta. Siempre está percibida, esté facturada o no.";
+} else {
+formMovimiento.style.display = "none";
+document.getElementById("form-masiva").style.display = "none";
+document.getElementById("modal-subtext").textContent = "Documento emitido o recibido. No implica que el dinero ya se cobró o se pagó.";
+}
+}
+function switchSecondaryTab(tab){
+document.querySelectorAll("#modal-tabs-secondary .modal-tab").forEach(function(t){ t.classList.toggle("active", t.dataset.tab===tab); });
+formMovimiento.style.display = tab==="manual" ? "block":"none";
+document.getElementById("form-masiva").style.display = tab==="masiva" ? "block":"none";
+}
+document.getElementById("modal-tabs-primary").addEventListener("click", function(e){
+const t = e.target.closest(".modal-tab");
+if(!t) return;
+switchPrimaryTab(t.dataset.primary);
+});
+document.getElementById("modal-tabs-secondary").addEventListener("click", function(e){
+const t = e.target.closest(".modal-tab");
+if(!t) return;
+switchSecondaryTab(t.dataset.tab);
+});
+
+function openLoadModal(){
+editingId = null;
+factEditingId = null;
+document.getElementById("modal-title").textContent = "Cargar";
+document.getElementById("btn-submit-manual").textContent = "Guardar movimiento";
+document.getElementById("btn-submit-factura").textContent = "Guardar factura";
+formMovimiento.reset();
+formFactura.reset();
+setTipoUI(tipoGroup, "ingreso");
+setTipoUI(tipoFactGroup, "emitida");
+fillCuentaSelect();
+fillSimpleListSelect("f-categoria-select", "f-categoria-new", "categorias", "Ninguna");
+fillSimpleListSelect("f-subconcepto-select", "f-subconcepto-new", "subconceptos", "Ninguno");
+document.getElementById("ff-estado").disabled = false;
+const existingHint = document.getElementById("ff-estado-lock-hint");
+if(existingHint) existingHint.textContent = "";
+document.getElementById("f-fecha").value = new Date().toISOString().slice(0,10);
+document.getElementById("ff-fecha").value = new Date().toISOString().slice(0,10);
+movMeses = []; factMeses = [];
+renderMesesChips("mov-meses-chips", movMeses);
+renderMesesChips("fact-meses-chips", factMeses);
+linkedFacturaId = null;
+document.getElementById("factura-match-box").style.display = "none";
+renderFacturaMatches();
+movAsignacion = "sin_clasificar";
+retiroAhorroVal = "";
+document.getElementById("asig-section").style.display = "block";
+asigGroup.querySelectorAll(".asig-btn").forEach(function(b){ b.classList.toggle("active", b.dataset.val==="sin_clasificar"); });
+retiroAhorroGroup.querySelectorAll(".asig-btn").forEach(function(b){ b.classList.toggle("active", b.dataset.val===""); });
+document.getElementById("asig-split-row").style.display = "none";
+document.getElementById("asig-sub-row").style.display = "none";
+document.getElementById("f-split-planta").value = 50;
+document.getElementById("f-split-sub").value = 50;
+switchPrimaryTab("movimiento");
+overlay.classList.add("open");
+}
+
+function openEditModal(id){
+const m = STATE.movimientos.find(function(x){ return x.id===id; });
+if(!m) return;
+editingId = id;
+document.getElementById("modal-title").textContent = "Editar movimiento";
+document.getElementById("btn-submit-manual").textContent = "Guardar cambios";
+fillCuentaSelect();
+setTipoUI(tipoGroup, m.tipo);
+document.getElementById("f-entidad").value = m.entidad||"";
+document.getElementById("f-monto").value = m.monto||"";
+document.getElementById("f-fecha").value = m.fecha||"";
+document.getElementById("f-cuenta").value = m.cuenta||STATE.cuentas[0];
+document.getElementById("f-iva").value = m.iva||"0";
+fillSimpleListSelect("f-categoria-select", "f-categoria-new", "categorias", "Ninguna");
+fillSimpleListSelect("f-subconcepto-select", "f-subconcepto-new", "subconceptos", "Ninguno");
+setSelectValueEnsuring("f-categoria-select", "categorias", m.categoria||"");
+setSelectValueEnsuring("f-subconcepto-select", "subconceptos", m.subconcepto||"");
+document.getElementById("f-facturaref").value = m.facturaRef||"";
+movMeses = (m.mesesProduccion||[]).slice();
+renderMesesChips("mov-meses-chips", movMeses);
+document.getElementById("factura-match-box").style.display = "none";
+linkedFacturaId = null;
+document.getElementById("asig-section").style.display = "none";
+switchPrimaryTab("movimiento");
+switchSecondaryTab("manual");
+overlay.classList.add("open");
+}
+
+function openFacturaEditModal(id){
+const f = STATE.facturas.find(function(x){ return x.id===id; });
+if(!f) return;
+factEditingId = id;
+document.getElementById("modal-title").textContent = "Editar factura";
+document.getElementById("btn-submit-factura").textContent = "Guardar cambios";
+setTipoUI(tipoFactGroup, f.tipo);
+document.getElementById("ff-entidad").value = f.entidad||"";
+document.getElementById("ff-monto").value = f.monto||"";
+document.getElementById("ff-fecha").value = f.fechaEmision||"";
+document.getElementById("ff-numero").value = f.numeroFactura||"";
+document.getElementById("ff-iva").value = f.iva||"0";
+document.getElementById("ff-estado").value = f.estado||"pendiente";
+const estadoBloqueado = (f.estado === "cobrada" && f.movimientoId);
+document.getElementById("ff-estado").disabled = !!estadoBloqueado;
+let bloqueoHint = document.getElementById("ff-estado-lock-hint");
+if(!bloqueoHint){
+bloqueoHint = document.createElement("div");
+bloqueoHint.id = "ff-estado-lock-hint";
+bloqueoHint.className = "hint";
+document.getElementById("ff-estado").parentNode.appendChild(bloqueoHint);
+}
+bloqueoHint.textContent = estadoBloqueado ? "Para revertir, borrá el movimiento vinculado desde el tablero." : "";
+factMeses = (f.mesesProduccion||[]).slice();
+renderMesesChips("fact-meses-chips", factMeses);
+switchPrimaryTab("factura");
+overlay.classList.add("open");
+}
+
+function setTipoUI(group, val){
+group.querySelectorAll("label").forEach(function(l){ l.classList.toggle("checked", l.dataset.val===val); });
+group.dataset.value = val;
+}
+tipoGroup.addEventListener("click", function(e){
+const l = e.target.closest("label");
+if(!l) return;
+setTipoUI(tipoGroup, l.dataset.val);
+});
+tipoFactGroup.addEventListener("click", function(e){
+const l = e.target.closest("label");
+if(!l) return;
+setTipoUI(tipoFactGroup, l.dataset.val);
+});
+
+document.getElementById("btn-cargar").addEventListener("click", openLoadModal);
+document.getElementById("btn-cancel-manual").addEventListener("click", function(){ overlay.classList.remove("open"); });
+document.getElementById("btn-cancel-masiva").addEventListener("click", function(){ overlay.classList.remove("open"); });
+document.getElementById("btn-cancel-factura").addEventListener("click", function(){ overlay.classList.remove("open"); });
+
+document.getElementById("btn-submit-manual").addEventListener("click", function(e){
+e.preventDefault();
+try{
+const tipo = tipoGroup.dataset.value || "ingreso";
+const entidad = document.getElementById("f-entidad").value.trim();
+const monto = Number(document.getElementById("f-monto").value);
+const fecha = document.getElementById("f-fecha").value;
+const cuenta = document.getElementById("f-cuenta").value;
+const iva = document.getElementById("f-iva").value;
+const categoria = resolveSimpleListSelect("f-categoria-select", "f-categoria-new", "categorias");
+const subconcepto = resolveSimpleListSelect("f-subconcepto-select", "f-subconcepto-new", "subconceptos");
+const facturaRef = document.getElementById("f-facturaref").value.trim();
+const mesesProduccion = movMeses.slice();
+
+if(!entidad || !monto || !fecha || !cuenta){
+toast("Completá entidad, monto, fecha y cuenta.");
+return;
+}
+
+if(editingId){
+const m = STATE.movimientos.find(function(x){ return x.id===editingId; });
+if(m){
+Object.assign(m, {tipo:tipo, entidad:entidad, monto:monto, fecha:fecha, cuenta:cuenta, iva:iva, categoria:categoria, subconcepto:subconcepto, facturaRef:facturaRef, mesesProduccion:mesesProduccion});
+}
+toast("Movimiento actualizado.");
+overlay.classList.remove("open");
+saveAndRender();
+return;
+}
+
+const base = {tipo:tipo, entidad:entidad, fecha:fecha, cuenta:cuenta, iva:iva, categoria:categoria, subconcepto:subconcepto, facturaRef:facturaRef, mesesProduccion:mesesProduccion, createdAt: Date.now()};
+const asigFinal = retiroAhorroVal || movAsignacion;
+let createdMov = null;
+
+if(asigFinal === "sin_clasificar"){
+createdMov = Object.assign({}, base, {id: uid(), monto:monto, destino:"sin_clasificar", subcontratadoId:null});
+STATE.movimientos.push(createdMov);
+toast("Movimiento cargado a Gastos a Clasificar.");
+} else if(asigFinal === "planta"){
+createdMov = Object.assign({}, base, {id: uid(), monto:monto, destino:"planta", subcontratadoId:null});
+STATE.movimientos.push(createdMov);
+toast("Movimiento cargado directo a Planta Propia.");
+} else if(asigFinal === "retiro" || asigFinal === "ahorro"){
+createdMov = Object.assign({}, base, {id: uid(), monto:monto, destino:asigFinal, subcontratadoId:null});
+STATE.movimientos.push(createdMov);
+toast("Movimiento cargado como " + (asigFinal==="retiro"?"Retiro":"Ahorro") + ".");
+} else if(asigFinal === "subcontratado"){
+const subId = resolveSubcontratadoFromSelect();
+if(!subId){ toast("Elegí o cargá un subcontratado."); return; }
+createdMov = Object.assign({}, base, {id: uid(), monto:monto, destino:"subcontratado", subcontratadoId:subId});
+STATE.movimientos.push(createdMov);
+toast("Movimiento cargado directo a Subcontratados.");
+} else if(asigFinal === "split"){
+const pPlanta = Number(document.getElementById("f-split-planta").value)||0;
+const pSub = Number(document.getElementById("f-split-sub").value)||0;
+if(pPlanta + pSub !== 100){ toast("El reparto tiene que sumar 100%."); return; }
+let subId = null;
+if(pSub > 0){
+subId = resolveSubcontratadoFromSelect();
+if(!subId){ toast("Elegí o cargá un subcontratado para la parte repartida."); return; }
+}
+if(pPlanta > 0){
+STATE.movimientos.push(Object.assign({}, base, {id: uid(), monto: round2(monto*pPlanta/100), destino:"planta", subcontratadoId:null}));
+}
+if(pSub > 0){
+STATE.movimientos.push(Object.assign({}, base, {id: uid(), monto: round2(monto*pSub/100), destino:"subcontratado", subcontratadoId:subId}));
+}
+toast("Movimiento repartido y cargado.");
+}
+
+if(linkedFacturaId && createdMov){
+const f = STATE.facturas.find(function(x){ return x.id===linkedFacturaId; });
+if(f){ f.estadoAnterior = f.estado; f.estado = "cobrada"; f.movimientoId = createdMov.id; }
+}
+
+overlay.classList.remove("open");
+saveAndRender();
+if(createdMov && createdMov.destino === "ahorro"){ askPagoIva(createdMov.id); }
+}catch(err){
+console.error("Error al guardar movimiento:", err);
+toast("No se pudo guardar: " + err.message);
+}
+});
+
+document.getElementById("btn-submit-factura").addEventListener("click", function(e){
+e.preventDefault();
+try{
+const tipo = tipoFactGroup.dataset.value || "emitida";
+const entidad = document.getElementById("ff-entidad").value.trim();
+const monto = Number(document.getElementById("ff-monto").value);
+const fechaEmision = document.getElementById("ff-fecha").value;
+const numeroFactura = document.getElementById("ff-numero").value.trim();
+const iva = document.getElementById("ff-iva").value;
+const estado = document.getElementById("ff-estado").value;
+const mesesProduccion = factMeses.slice();
+
+if(!entidad || !monto || !fechaEmision || !numeroFactura){
+toast("Completá entidad, monto, fecha y N° de factura.");
+return;
+}
+
+let targetFactura;
+if(factEditingId){
+targetFactura = STATE.facturas.find(function(x){ return x.id===factEditingId; });
+if(targetFactura){
+const yaEstabaCobrada = targetFactura.estado === "cobrada";
+Object.assign(targetFactura, {tipo:tipo, entidad:entidad, monto:monto, fechaEmision:fechaEmision, numeroFactura:numeroFactura, iva:iva, estado:(estado==="cobrada" && !yaEstabaCobrada) ? "pendiente" : estado, mesesProduccion:mesesProduccion});
+if(estado === "cobrada" && !yaEstabaCobrada){
+overlay.classList.remove("open");
+saveState();
+openCobroModal(targetFactura.id);
+return;
+}
+if(yaEstabaCobrada && targetFactura.movimientoId){
+const movVinculado = STATE.movimientos.find(function(mv){ return mv.id === targetFactura.movimientoId; });
+if(movVinculado){
+Object.assign(movVinculado, {
+tipo: (tipo==="emitida"?"ingreso":"egreso"),
+entidad: entidad, monto: monto, iva: iva,
+facturaRef: numeroFactura, mesesProduccion: mesesProduccion.slice()
+});
+toast("Factura y movimiento vinculado actualizados.");
+} else {
+toast("Factura actualizada.");
+}
+} else {
+toast("Factura actualizada.");
+}
+}
+} else {
+targetFactura = {
+id: uid(), tipo:tipo, entidad:entidad, monto:monto, fechaEmision:fechaEmision, numeroFactura:numeroFactura, iva:iva,
+estado: estado==="cobrada" ? "pendiente" : estado, mesesProduccion:mesesProduccion,
+createdAt: Date.now()
+};
+STATE.facturas.push(targetFactura);
+if(estado === "cobrada"){
+overlay.classList.remove("open");
+saveState();
+openCobroModal(targetFactura.id);
+return;
+}
+toast("Factura cargada.");
+}
+overlay.classList.remove("open");
+saveAndRender();
+}catch(err){
+console.error("Error al guardar factura:", err);
+toast("No se pudo guardar: " + err.message);
+}
+});
+
+document.getElementById("btn-submit-masiva").addEventListener("click", function(){
+const raw = document.getElementById("f-masiva").value.trim();
+if(!raw){ toast("Pegá al menos una fila."); return; }
+const lines = raw.split("\n").map(function(l){ return l.trim(); }).filter(Boolean);
+let ok=0, fail=0;
+lines.forEach(function(line){
+const parts = line.split(",").map(function(p){ return p.trim(); });
+if(parts.length < 5){ fail++; return; }
+const tipo = parts[0], entidad = parts[1], monto = parts[2], fecha = parts[3], cuenta = parts[4];
+const subconcepto = parts[5]||"", mesesRaw = parts[6]||"", iva = parts[7]||"0", facturaRef = parts[8]||"";
+if((tipo!=="ingreso" && tipo!=="egreso") || !entidad || isNaN(Number(monto)) || !fecha || !cuenta){ fail++; return; }
+const mesesProduccion = mesesRaw ? mesesRaw.split(";").map(function(s){ return s.trim(); }).filter(Boolean) : [];
+if(subconcepto && STATE.subconceptos.indexOf(subconcepto)===-1) STATE.subconceptos.push(subconcepto);
+STATE.movimientos.push({
+id: uid(), tipo:tipo, entidad:entidad, monto:Number(monto), fecha:fecha, cuenta:cuenta, subconcepto:subconcepto, mesesProduccion:mesesProduccion, iva:iva, facturaRef:facturaRef,
+destino:"sin_clasificar", subcontratadoId:null,
+createdAt: Date.now()
+});
+ok++;
+});
+document.getElementById("f-masiva").value = "";
+overlay.classList.remove("open");
+saveAndRender();
+toast(ok + " movimiento(s) cargado(s)" + (fail? (", " + fail + " con error de formato") : "") + ".");
+});
+
+function getAllMonths(){
+const set = new Set();
+STATE.movimientos.forEach(function(m){ if(m.fecha) set.add(m.fecha.slice(0,7)); });
+return Array.from(set).sort();
+}
+
+function renderMonthPicker(){
+const months = getAllMonths();
+const wrap = document.getElementById("month-picker");
+if(!months.length){
+wrap.innerHTML = '<span style="font-size:12.5px;color:var(--muted);">Todavía no hay movimientos cargados.</span>';
+return;
+}
+wrap.innerHTML = months.map(function(mo){
+return '<div class="month-chip ' + (selectedMonths.has(mo)?'on':'') + '" data-mo="' + mo + '">' + mo + '</div>';
+}).join("");
+}
+document.getElementById("month-picker").addEventListener("click", function(e){
+const chip = e.target.closest(".month-chip");
+if(!chip) return;
+const mo = chip.dataset.mo;
+if(selectedMonths.has(mo)) selectedMonths.delete(mo); else selectedMonths.add(mo);
+renderMonthPicker();
+renderCashFlowTable();
+});
+
+function renderCashFlowTable(){
+const body = document.getElementById("cashflow-body");
+const useAll = selectedMonths.size === 0;
+const filtered = STATE.movimientos.filter(function(m){ return m.fecha && (useAll || selectedMonths.has(m.fecha.slice(0,7))); });
+let grandI=0, grandE=0;
+const rows = STATE.cuentas.map(function(cta){
+const movs = filtered.filter(function(m){ return m.cuenta===cta; });
+const n = netOf(movs);
+grandI += n.ingreso; grandE += n.egreso;
+return '<tr>' +
+'<td>' + escapeHtml(cta) + '</td>' +
+'<td class="mono pos">' + money(n.ingreso) + '</td>' +
+'<td class="mono neg">' + money(n.egreso) + '</td>' +
+'<td class="mono ' + (n.neto>=0?'pos':'neg') + '">' + money(n.neto) + '</td>' +
+'</tr>';
+}).join("");
+const totalRow = '<tr class="total-row">' +
+'<td>Total</td>' +
+'<td class="mono pos">' + money(grandI) + '</td>' +
+'<td class="mono neg">' + money(grandE) + '</td>' +
+'<td class="mono ' + ((grandI-grandE)>=0?'pos':'neg') + '">' + money(grandI-grandE) + '</td>' +
+'</tr>';
+body.innerHTML = rows + totalRow;
+}
+
+function daysSince(fecha){
+if(!fecha) return "—";
+const d0 = new Date(fecha+"T00:00:00");
+const d1 = new Date();
+const diff = Math.floor((d1 - d0) / 86400000);
+return diff >= 0 ? diff : 0;
+}
+
+function renderFacturasTables(){
+const cobrar = STATE.facturas.filter(function(f){ return f.tipo==="emitida"; });
+const pagar = STATE.facturas.filter(function(f){ return f.tipo==="recibida"; });
+
+function rowsFor(list){
+if(!list.length) return '<tr><td colspan="7" style="color:var(--muted);font-style:italic;">Sin facturas cargadas.</td></tr>';
+return list.slice().sort(function(a,b){ return (b.fechaEmision||"").localeCompare(a.fechaEmision||""); }).map(function(f){
+const estadoCell = (f.estado==='cobrada' && f.movimientoId)
+? '<span class="badge badge-cob">' + (f.tipo==='emitida'?'Cobrada':'Pagada') + '</span><div class="hint" style="margin-top:4px;">Para revertir, borrá el movimiento vinculado.</div>'
+: '<select class="mini" data-fact-id="' + f.id + '">' +
+'<option value="pendiente"' + (f.estado==='pendiente'?' selected':'') + '>Pendiente</option>' +
+'<option value="cobrada"' + (f.estado==='cobrada'?' selected':'') + '>' + (f.tipo==='emitida'?'Cobrada':'Pagada') + '</option>' +
+'<option value="vencida"' + (f.estado==='vencida'?' selected':'') + '>Vencida</option>' +
+'</select>';
+return '<tr>' +
+'<td class="mono">' + escapeHtml(f.numeroFactura) + '</td>' +
+'<td>' + escapeHtml(f.entidad||"—") + '</td>' +
+'<td>' + fmtDate(f.fechaEmision) + '</td>' +
+'<td class="mono">' + money(f.monto) + '</td>' +
+'<td>' + estadoCell + '</td>' +
+'<td class="mono">' + ((f.estado==='pendiente' || f.estado==='vencida') ? daysSince(f.fechaEmision) : '—') + '</td>' +
+'<td class="row-acts"><button class="icon-btn" data-fact-edit="' + f.id + '" title="Editar">' + ICONS.edit + '</button> <button class="icon-btn danger" data-fact-del="' + f.id + '" title="Borrar">' + ICONS.trash + '</button></td>' +
+'</tr>';
+}).join("");
+}
+document.getElementById("facturas-cobrar-body").innerHTML = rowsFor(cobrar);
+document.getElementById("facturas-pagar-body").innerHTML = rowsFor(pagar);
+}
+
+let mayorModo = "entidad";
+let mayorSelected = null;
+let mayoresFiltro = "";
+
+function getEntidadesResumen(){
+const map = new Map();
+function ensure(nombre){
+const key = nombre.trim().toLowerCase();
+if(!map.has(key)) map.set(key, {nombre: nombre.trim(), ingreso:0, egreso:0, movCount:0, factCount:0});
+return map.get(key);
+}
+STATE.movimientos.forEach(function(m){
+if(!m.entidad) return;
+const e = ensure(m.entidad);
+if(m.tipo==="ingreso") e.ingreso += Number(m.monto)||0; else e.egreso += Number(m.monto)||0;
+e.movCount++;
+});
+STATE.facturas.forEach(function(f){
+if(!f.entidad) return;
+const e = ensure(f.entidad);
+e.factCount++;
+});
+return Array.from(map.values()).sort(function(a,b){ return a.nombre.localeCompare(b.nombre); });
+}
+
+function getCuentasResumen(){
+return STATE.cuentas.map(function(c){
+const movs = STATE.movimientos.filter(function(m){ return m.cuenta===c; });
+const n = netOf(movs);
+return {nombre: c, ingreso: n.ingreso, egreso: n.egreso, movCount: movs.length, factCount: 0};
+});
+}
+
+document.getElementById("mayores-modo-tabs").addEventListener("click", function(e){
+const t = e.target.closest(".modal-tab");
+if(!t) return;
+mayorModo = t.dataset.modo;
+document.querySelectorAll("#mayores-modo-tabs .modal-tab").forEach(function(b){ b.classList.toggle("active", b===t); });
+document.getElementById("mayores-list-title").textContent = mayorModo==="entidad" ? "Entidades" : "Cuentas";
+document.getElementById("mayores-buscar").placeholder = mayorModo==="entidad" ? "Buscar entidad…" : "Buscar cuenta…";
+mayorSelected = null;
+renderMayores();
+});
+
+function renderMayoresList(){
+const list = document.getElementById("mayores-list");
+let items = mayorModo==="entidad" ? getEntidadesResumen() : getCuentasResumen();
+if(mayoresFiltro.trim()){
+const f = mayoresFiltro.trim().toLowerCase();
+items = items.filter(function(e){ return e.nombre.toLowerCase().indexOf(f)!==-1; });
+}
+if(!items.length){
+list.innerHTML = '<div class="empty-col">' + (mayoresFiltro?'Sin resultados.':'Todavía no hay datos cargados.') + '</div>';
+return;
+}
+list.innerHTML = items.map(function(e){
+const neto = e.ingreso - e.egreso;
+const key = e.nombre.trim().toLowerCase();
+const activeClass = (mayorSelected === key) ? " active" : "";
+const subLabel = mayorModo==="entidad" ? (e.movCount + ' mov. · ' + e.factCount + ' fact.') : (e.movCount + ' mov.');
+return '<div class="mayor-item' + activeClass + '" data-key="' + escapeHtml(key) + '">' +
+'<div><div class="nom">' + escapeHtml(e.nombre) + '</div><div class="sub">' + subLabel + '</div></div>' +
+'<div class="net ' + (neto>=0?'pos':'neg') + '">' + money(neto) + '</div>' +
+'</div>';
+}).join("");
+}
+
+function renderMayorDetalle(){
+const title = document.getElementById("mayor-detalle-title");
+const resumen = document.getElementById("mayor-resumen");
+const body = document.getElementById("mayor-detalle-body");
+if(!mayorSelected){
+title.textContent = "Elegí uno de la lista";
+resumen.innerHTML = "";
+body.innerHTML = "";
+return;
+}
+
+let movs, facts, nombreReal;
+if(mayorModo==="entidad"){
+movs = STATE.movimientos.filter(function(m){ return (m.entidad||"").trim().toLowerCase() === mayorSelected; });
+facts = STATE.facturas.filter(function(f){ return (f.entidad||"").trim().toLowerCase() === mayorSelected; });
+nombreReal = (movs[0] && movs[0].entidad) || (facts[0] && facts[0].entidad) || mayorSelected;
+} else {
+movs = STATE.movimientos.filter(function(m){ return (m.cuenta||"").trim().toLowerCase() === mayorSelected; });
+facts = [];
+nombreReal = (movs[0] && movs[0].cuenta) || STATE.cuentas.find(function(c){ return c.trim().toLowerCase()===mayorSelected; }) || mayorSelected;
+}
+title.textContent = nombreReal;
+
+const n = netOf(movs);
+const facturasPendientes = facts.filter(function(f){ return f.estado!=="cobrada"; })
+.reduce(function(acc,f){ return acc + (Number(f.monto)||0); }, 0);
+resumen.innerHTML =
+'<div class="mayor-resumen-row">' +
+'<div class="mayor-resumen-chip"><div class="lbl">Ingresos</div><div class="val pos">' + money(n.ingreso) + '</div></div>' +
+'<div class="mayor-resumen-chip"><div class="lbl">Egresos</div><div class="val neg">' + money(n.egreso) + '</div></div>' +
+'<div class="mayor-resumen-chip"><div class="lbl">Imp. Déb/Créd (0,6%)</div><div class="val neg">-' + money(n.impuesto) + '</div></div>' +
+'<div class="mayor-resumen-chip"><div class="lbl">Ret. Ganancias (0,8%)</div><div class="val neg">-' + money(n.retencionGanancias) + '</div></div>' +
+'<div class="mayor-resumen-chip"><div class="lbl">Neto</div><div class="val ' + (n.neto>=0?'pos':'neg') + '">' + money(n.neto) + '</div></div>' +
+(mayorModo==="entidad" ? '<div class="mayor-resumen-chip"><div class="lbl">Facturas pendientes</div><div class="val">' + money(facturasPendientes) + '</div></div>' : '') +
+'</div>';
+
+const eventos = [];
+movs.forEach(function(m){
+eventos.push({fecha: m.fecha, tipo: "movimiento", data: m});
+});
+facts.forEach(function(f){
+eventos.push({fecha: f.fechaEmision, tipo: "factura", data: f});
+});
+eventos.sort(function(a,b){ return (b.fecha||"").localeCompare(a.fecha||""); });
+
+if(!eventos.length){
+body.innerHTML = '<div class="empty-col">Sin movimientos' + (mayorModo==="entidad"?' ni facturas':'') + ' para mostrar.</div>';
+return;
+}
+
+const destinoLabel = {planta:"Planta Propia", subcontratado:"Subcontratados", retiro:"Retiro", ahorro:"Ahorro", sin_clasificar:"Sin clasificar"};
+const colEntidadCuenta = mayorModo==="entidad" ? "Cuenta" : "Entidad";
+body.innerHTML = '<table><thead><tr><th>Fecha</th><th>Tipo</th><th>' + colEntidadCuenta + '</th><th>Detalle</th><th class="mono">Monto</th><th class="mono">Imp. 0,6%</th><th class="mono">Ganancias</th><th>Estado / Destino</th></tr></thead><tbody>' +
+eventos.map(function(ev){
+if(ev.tipo==="movimiento"){
+const m = ev.data;
+const impM = impuestoDebCredFor(m);
+const ganM = retencionGananciasFor(m);
+return '<tr>' +
+'<td>' + fmtDate(m.fecha) + '</td>' +
+'<td>Movimiento</td>' +
+'<td>' + escapeHtml(mayorModo==="entidad" ? (m.cuenta||"—") : (m.entidad||"—")) + '</td>' +
+'<td>' + (m.subconcepto?escapeHtml(m.subconcepto):'') + (m.categoria?(' · '+escapeHtml(m.categoria)):'') + '</td>' +
+'<td class="mono ' + (m.tipo==='ingreso'?'pos':'neg') + '">' + (m.tipo==='ingreso'?'+':'−') + money(m.monto) + '</td>' +
+'<td class="mono ' + (impM>0?'neg':'') + '" style="' + (impM===0?'color:var(--muted);':'') + '">' + (impM>0?('-'+money(impM)):'—') + '</td>' +
+'<td class="mono ' + (ganM>0?'neg':'') + '" style="' + (ganM===0?'color:var(--muted);':'') + '">' + (ganM>0?('-'+money(ganM)):'—') + '</td>' +
+'<td>' + (destinoLabel[m.destino]||m.destino) + '</td>' +
+'</tr>';
+} else {
+const f = ev.data;
+const badgeClass = f.estado==='cobrada' ? 'badge-cob' : (f.estado==='vencida' ? 'badge-venc' : 'badge-pend');
+const badgeText = f.estado==='cobrada' ? (f.tipo==='emitida'?'Cobrada':'Pagada') : (f.estado==='vencida'?'Vencida':'Pendiente');
+return '<tr>' +
+'<td>' + fmtDate(f.fechaEmision) + '</td>' +
+'<td>Factura</td>' +
+'<td>—</td>' +
+'<td>N° ' + escapeHtml(f.numeroFactura) + ' (' + (f.tipo==='emitida'?'emitida':'recibida') + ')</td>' +
+'<td class="mono">' + money(f.monto) + '</td>' +
+'<td class="mono" style="color:var(--muted);">—</td>' +
+'<td class="mono" style="color:var(--muted);">—</td>' +
+'<td><span class="badge ' + badgeClass + '">' + badgeText + '</span></td>' +
+'</tr>';
+}
+}).join("") + '</tbody></table>';
+}
+
+function renderMayores(){
+renderMayoresList();
+renderMayorDetalle();
+}
+
+document.getElementById("mayores-list").addEventListener("click", function(e){
+const item = e.target.closest(".mayor-item");
+if(!item) return;
+mayorSelected = item.dataset.key;
+renderMayores();
+});
+document.getElementById("mayores-buscar").addEventListener("input", function(e){
+mayoresFiltro = e.target.value;
+renderMayoresList();
+});
+
+document.getElementById("view-facturas").addEventListener("change", function(e){
+const sel = e.target.closest("select[data-fact-id]");
+if(!sel) return;
+const f = STATE.facturas.find(function(x){ return x.id===sel.dataset.factId; });
+if(!f) return;
+if(sel.value === "cobrada" && f.estado !== "cobrada"){
+openCobroModal(f.id);
+renderFacturasTables();
+return;
+}
+f.estado = sel.value;
+saveState();
+});
+
+const cobroOverlay = document.getElementById("modal-cobro-overlay");
+const cobroAsigGroup = document.getElementById("cobro-asig-group");
+let cobroAsignacion = "sin_clasificar";
+
+function fillCobroSubcontratadoSelect(){
+const sel = document.getElementById("cobro-subcontratado-select");
+let html = STATE.subcontratados.map(function(s){
+return '<option value="' + s.id + '">' + escapeHtml(s.nombre) + '</option>';
+}).join("");
+html += '<option value="__new__">➕ Nuevo subcontratado…</option>';
+sel.innerHTML = html;
+document.getElementById("cobro-subcontratado-new").style.display = "none";
+document.getElementById("cobro-subcontratado-new").value = "";
+}
+document.getElementById("cobro-subcontratado-select").addEventListener("change", function(e){
+document.getElementById("cobro-subcontratado-new").style.display = e.target.value==="__new__" ? "block":"none";
+});
+function resolveCobroSubcontratado(){
+const sel = document.getElementById("cobro-subcontratado-select");
+if(sel.value === "__new__"){
+const name = document.getElementById("cobro-subcontratado-new").value.trim();
+if(!name) return null;
+const nuevo = {id: uid(), nombre: name};
+STATE.subcontratados.push(nuevo);
+return nuevo.id;
+}
+return sel.value || null;
+}
+cobroAsigGroup.addEventListener("click", function(e){
+const btn = e.target.closest(".asig-btn");
+if(!btn) return;
+cobroAsignacion = btn.dataset.val;
+cobroAsigGroup.querySelectorAll(".asig-btn").forEach(function(b){ b.classList.toggle("active", b===btn); });
+document.getElementById("cobro-split-row").style.display = cobroAsignacion==="split" ? "block":"none";
+document.getElementById("cobro-sub-row").style.display = (cobroAsignacion==="subcontratado" || cobroAsignacion==="split") ? "block":"none";
+if(cobroAsignacion==="subcontratado" || cobroAsignacion==="split") fillCobroSubcontratadoSelect();
+});
+
+function openCobroModal(facturaId){
+pendingCobroFacturaId = facturaId;
+const sel = document.getElementById("cobro-cuenta");
+sel.innerHTML = STATE.cuentas.map(function(c){ return '<option value="' + escapeHtml(c) + '">' + escapeHtml(c) + '</option>'; }).join("");
+document.getElementById("cobro-fecha").value = new Date().toISOString().slice(0,10);
+cobroAsignacion = "sin_clasificar";
+cobroAsigGroup.querySelectorAll(".asig-btn").forEach(function(b){ b.classList.toggle("active", b.dataset.val==="sin_clasificar"); });
+document.getElementById("cobro-split-row").style.display = "none";
+document.getElementById("cobro-sub-row").style.display = "none";
+document.getElementById("cobro-split-planta").value = 50;
+document.getElementById("cobro-split-sub").value = 50;
+cobroOverlay.classList.add("open");
+}
+document.getElementById("btn-cancel-cobro").addEventListener("click", function(){
+cobroOverlay.classList.remove("open");
+renderFacturasTables();
+});
+document.getElementById("btn-confirm-cobro").addEventListener("click", function(){
+const f = STATE.facturas.find(function(x){ return x.id===pendingCobroFacturaId; });
+if(!f) return;
+const cuenta = document.getElementById("cobro-cuenta").value;
+const fecha = document.getElementById("cobro-fecha").value;
+if(!cuenta || !fecha){ toast("Completá cuenta y fecha."); return; }
+const base = {
+tipo: (f.tipo==="emitida"?"ingreso":"egreso"), entidad: f.entidad, fecha: fecha, cuenta: cuenta,
+iva: f.iva, subconcepto: "", facturaRef: f.numeroFactura, mesesProduccion: (f.mesesProduccion||[]).slice(), createdAt: Date.now()
+};
+let firstMovId = null;
+
+if(cobroAsignacion === "split"){
+const pPlanta = Number(document.getElementById("cobro-split-planta").value)||0;
+const pSub = Number(document.getElementById("cobro-split-sub").value)||0;
+if(pPlanta + pSub !== 100){ toast("El reparto tiene que sumar 100%."); return; }
+let subId = null;
+if(pSub > 0){
+subId = resolveCobroSubcontratado();
+if(!subId){ toast("Elegí o cargá un subcontratado para la parte repartida."); return; }
+}
+if(pPlanta > 0){
+const mv = Object.assign({}, base, {id: uid(), monto: round2(f.monto*pPlanta/100), destino:"planta", subcontratadoId:null});
+STATE.movimientos.push(mv); firstMovId = firstMovId || mv.id;
+}
+if(pSub > 0){
+const mv = Object.assign({}, base, {id: uid(), monto: round2(f.monto*pSub/100), destino:"subcontratado", subcontratadoId:subId});
+STATE.movimientos.push(mv); firstMovId = firstMovId || mv.id;
+}
+} else if(cobroAsignacion === "subcontratado"){
+const subId = resolveCobroSubcontratado();
+if(!subId){ toast("Elegí o cargá un subcontratado."); return; }
+const mv = Object.assign({}, base, {id: uid(), monto: f.monto, destino:"subcontratado", subcontratadoId:subId});
+STATE.movimientos.push(mv); firstMovId = mv.id;
+} else {
+const mv = Object.assign({}, base, {id: uid(), monto: f.monto, destino: cobroAsignacion, subcontratadoId:null});
+STATE.movimientos.push(mv); firstMovId = mv.id;
+}
+
+f.estadoAnterior = f.estado;
+f.estado = "cobrada";
+f.movimientoId = firstMovId;
+cobroOverlay.classList.remove("open");
+saveAndRender();
+toast("Cobro registrado y clasificado.");
+});
+document.getElementById("view-facturas").addEventListener("click", async function(e){
+const edit = e.target.closest("[data-fact-edit]");
+if(edit){ openFacturaEditModal(edit.dataset.factEdit); return; }
+const del = e.target.closest("[data-fact-del]");
+if(del){
+const ok = await confirmDialog("¿Borrar esta factura? No se puede deshacer.", "Borrar factura");
+if(ok){
+STATE.facturas = STATE.facturas.filter(function(f){ return f.id!==del.dataset.factDel; });
+saveAndRender();
+toast("Factura borrada.");
+}
+}
+});
+
+function renderAll(){
+try{
+renderKPIs();
+renderBoard();
+renderMonthPicker();
+renderCashFlowTable();
+renderFacturasTables();
+renderKPIsFacturas();
+renderMayores();
+}catch(err){
+console.error("Error de render:", err);
+toast("Ocurrió un error mostrando los datos. Revisá la consola.");
+}
+}
+
+document.getElementById("btn-debug").addEventListener("click", function(e){
+e.preventDefault();
+const resumen = document.getElementById("debug-resumen");
+const totalMonto = STATE.movimientos.reduce(function(acc,m){ return acc + (Number(m.monto)||0); }, 0);
+resumen.innerHTML =
+"Movimientos: <strong>" + STATE.movimientos.length + "</strong> · " +
+"Suma de todos los montos: <strong>" + money(totalMonto) + "</strong> · " +
+"Facturas: <strong>" + STATE.facturas.length + "</strong> · " +
+"Cuentas: <strong>" + STATE.cuentas.join(", ") + "</strong>";
+document.getElementById("debug-json").value = JSON.stringify(STATE, null, 2);
+document.getElementById("modal-debug-overlay").classList.add("open");
+});
+document.getElementById("btn-cerrar-debug").addEventListener("click", function(){
+document.getElementById("modal-debug-overlay").classList.remove("open");
+});
+document.getElementById("btn-copiar-debug").addEventListener("click", function(){
+const ta = document.getElementById("debug-json");
+ta.select();
+try{ document.execCommand("copy"); toast("Copiado."); }
+catch(e){ toast("No se pudo copiar automáticamente, seleccioná el texto a mano."); }
+});
+
+let pendingImportData = null;
+
+function stageImport(raw){
+let parsed;
+try{
+parsed = JSON.parse(raw);
+}catch(e){
+toast("Ese texto no es un JSON válido. Revisá que esté completo y sin recortar.");
+return;
+}
+if(!parsed || typeof parsed !== "object" || !Array.isArray(parsed.movimientos)){
+toast("El JSON no tiene la forma esperada (falta 'movimientos'). ¿Es el archivo correcto?");
+return;
+}
+const nMov = parsed.movimientos.length;
+const nFact = Array.isArray(parsed.facturas) ? parsed.facturas.length : 0;
+pendingImportData = parsed;
+document.getElementById("import-confirm-text").textContent =
+"Esto va a REEMPLAZAR todos los datos actuales por " + nMov + " movimiento(s) y " + nFact + " factura(s).";
+document.getElementById("import-confirm-box").style.display = "block";
+document.getElementById("modal-debug-overlay").classList.add("open");
+}
+
+document.getElementById("btn-importar-debug").addEventListener("click", function(){
+try{
+const raw = document.getElementById("debug-json").value.trim();
+if(!raw){ toast("Pegá primero el JSON a importar."); return; }
+stageImport(raw);
+}catch(err){
+toast("Error al leer el JSON: " + err.message);
+}
+});
+document.getElementById("btn-import-cancelar").addEventListener("click", function(){
+pendingImportData = null;
+document.getElementById("import-confirm-box").style.display = "none";
+});
+document.getElementById("btn-import-confirmar").addEventListener("click", function(){
+try{
+if(!pendingImportData){ toast("No hay datos pendientes de importar."); return; }
+STATE = Object.assign({}, DEFAULT_STATE, pendingImportData);
+if(!Array.isArray(STATE.cuentas)) STATE.cuentas = DEFAULT_STATE.cuentas.slice();
+if(!Array.isArray(STATE.subcontratados)) STATE.subcontratados = [];
+if(!Array.isArray(STATE.categorias)) STATE.categorias = [];
+if(!Array.isArray(STATE.subconceptos)) STATE.subconceptos = [];
+if(!Array.isArray(STATE.movimientos)) STATE.movimientos = [];
+if(!Array.isArray(STATE.facturas)) STATE.facturas = [];
+const nMov = STATE.movimientos.length;
+const nFact = STATE.facturas.length;
+pendingImportData = null;
+document.getElementById("import-confirm-box").style.display = "none";
+document.getElementById("modal-debug-overlay").classList.remove("open");
+saveAndRender();
+toast("Datos importados: " + nMov + " movimiento(s), " + nFact + " factura(s).");
+}catch(err){
+toast("Error al importar: " + err.message);
+}
+});
+
+document.getElementById("btn-exportar-archivo").addEventListener("click", function(e){
+e.preventDefault();
+try{
+const blob = new Blob([JSON.stringify(STATE, null, 2)], {type: "application/json"});
+const url = URL.createObjectURL(blob);
+const fecha = new Date().toISOString().slice(0,10);
+const a = document.createElement("a");
+a.href = url;
+a.download = "lubacom-backup-" + fecha + ".json";
+document.body.appendChild(a);
+a.click();
+document.body.removeChild(a);
+setTimeout(function(){ URL.revokeObjectURL(url); }, 2000);
+toast("Backup descargado.");
+}catch(err){
+toast("No se pudo exportar: " + err.message);
+}
+});
+
+document.getElementById("btn-importar-archivo").addEventListener("click", function(e){
+e.preventDefault();
+document.getElementById("input-importar-archivo").click();
+});
+document.getElementById("input-importar-archivo").addEventListener("change", function(e){
+const file = e.target.files && e.target.files[0];
+if(!file) return;
+const reader = new FileReader();
+reader.onload = function(ev){
+try{
+stageImport(ev.target.result);
+}catch(err){
+toast("Error al leer el archivo: " + err.message);
+}
+e.target.value = "";
+};
+reader.onerror = function(){
+toast("No se pudo leer el archivo.");
+e.target.value = "";
+};
+reader.readAsText(file);
+});
+
+function saveAndRender(){
+saveState();
+renderAll();
+}
+
+function iniciarTiempoReal(){
+if(!supaClient) return;
+try{
+supaClient.channel("lubacom_estado_cambios")
+.on("postgres_changes", { event: "UPDATE", schema: "public", table: "lubacom_estado", filter: "id=eq.1" }, function(payload){
+const nuevaFecha = payload.new && payload.new.updated_at;
+if(nuevaFecha && nuevaFecha === ultimoUpdatedAt) return;
+const nuevo = payload.new && payload.new.data;
+if(!nuevo) return;
+ultimoUpdatedAt = nuevaFecha;
+STATE = Object.assign({}, DEFAULT_STATE, nuevo);
+if(!Array.isArray(STATE.cuentas)) STATE.cuentas = DEFAULT_STATE.cuentas.slice();
+if(!Array.isArray(STATE.subcontratados)) STATE.subcontratados = [];
+if(!Array.isArray(STATE.categorias)) STATE.categorias = [];
+if(!Array.isArray(STATE.subconceptos)) STATE.subconceptos = [];
+if(!Array.isArray(STATE.movimientos)) STATE.movimientos = [];
+if(!Array.isArray(STATE.facturas)) STATE.facturas = [];
+renderAll();
+toast("Se actualizaron los datos (cambio de otro usuario).");
+})
+.subscribe();
+}catch(e){ console.error("No se pudo iniciar tiempo real:", e); }
+}
+
+(async function init(){
+await loadState();
+updatePeriodLabel();
+renderMesesChips("mov-meses-chips", movMeses);
+renderMesesChips("fact-meses-chips", factMeses);
+renderAll();
+iniciarTiempoReal();
+})();
+
+})();
+</script>
+</body>
+</html>
