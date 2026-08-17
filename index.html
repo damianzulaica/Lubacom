@@ -52,6 +52,46 @@
 --shadow-sm:0 1px 3px rgba(16,42,82,.08), 0 1px 2px rgba(16,42,82,.06);
 --shadow-md:0 14px 34px rgba(16,42,82,.16);
 }
+[data-theme="dark"]{
+--bg:#0F1521;
+--surface:#161D2C;
+--surface-soft:#1C2438;
+--surface-2:#202A40;
+--border:#2A3450;
+--border-strong:#3A4666;
+--text:#E7ECF7;
+--text-soft:#B7C2DC;
+--muted:#8592B4;
+
+--brand:#5B8DF5;
+--brand-soft:rgba(91,141,245,.16);
+--brand-line:rgba(91,141,245,.4);
+--grad-brand:linear-gradient(135deg,#1A3A73 0%,#3E6FD9 100%);
+
+--planta:#3ECF7A;
+--planta-soft:rgba(62,207,122,.14);
+--planta-line:rgba(62,207,122,.4);
+--grad-planta:linear-gradient(135deg,#12693A 0%,#2FAE63 100%);
+
+--sub:#F0A93A;
+--sub-soft:rgba(240,169,58,.14);
+--sub-line:rgba(240,169,58,.4);
+--grad-sub:linear-gradient(135deg,#7A4E0C 0%,#D68A16 100%);
+
+--neutral:#93A1C4;
+--neutral-soft:rgba(147,161,196,.14);
+--neutral-line:rgba(147,161,196,.35);
+
+--danger:#F0576D;
+--danger-soft:rgba(240,87,109,.14);
+--danger-line:rgba(240,87,109,.4);
+
+--shadow-sm:0 1px 3px rgba(0,0,0,.3), 0 1px 2px rgba(0,0,0,.24);
+--shadow-md:0 14px 34px rgba(0,0,0,.45);
+}
+[data-theme="dark"] body{
+background:radial-gradient(circle at 18% -10%, #1A2338 0%, #0F1521 55%);
+}
 *{box-sizing:border-box;}
 html,body{margin:0;padding:0;}
 body{
@@ -70,6 +110,7 @@ position:sticky;top:0;height:100vh;
 }
 .brand{display:flex;flex-direction:column;align-items:flex-start;gap:8px;margin-bottom:28px;padding:4px 4px 14px;border-bottom:1px solid var(--border);}
 .brand-logo{width:100%;max-width:170px;height:auto;display:block;}
+[data-theme="dark"] .brand-logo{filter:brightness(0) invert(1);}
 .brand-text .sub{font-size:10.5px;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;margin-top:0;}
 
 nav.navlist{display:flex;flex-direction:column;gap:2px;flex:1;}
@@ -421,10 +462,12 @@ main.content{padding:22px 18px 50px;}
 <div class="navitem" data-view="mayores">Mayores</div>
 <div class="navitem" data-view="produccion">Producción</div>
 </nav>
+<a href="#" id="btn-ver-anual" target="_blank" style="display:block;text-align:center;margin:6px 0 10px;font-size:12px;color:var(--brand);text-decoration:underline;">📅 Ver año completo ↗</a>
 <button class="cta-cargar" id="btn-cargar">+ Cargar</button>
+<button id="btn-toggle-theme" style="width:100%;margin-top:8px;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--surface-2);color:var(--text);font-size:12.5px;cursor:pointer;">🌙 Modo oscuro</button>
 <div class="sidebar-foot" id="storage-status">Guardando localmente…</div>
 <div id="supabase-diag" style="display:none;padding:8px 10px;border-radius:8px;margin-top:8px;font-family:monospace;font-size:10.5px;font-weight:600;line-height:1.4;"></div>
-<div class="sidebar-foot" style="margin-top:4px;opacity:.6;">Versión: 2026-08-13.57 (barra unificada 3 segmentos)</div>
+<div class="sidebar-foot" style="margin-top:4px;opacity:.6;">Versión: 2026-08-13.64 (fix scope + defensivo)</div>
 <div class="sidebar-foot" style="margin-top:6px;"><a href="#" id="btn-debug" style="color:#2F6FED;text-decoration:underline;">Ver datos guardados (debug)</a></div>
 <div class="sidebar-foot" style="margin-top:6px;display:flex;gap:10px;">
 <a href="#" id="btn-exportar-archivo" style="color:#2F6FED;text-decoration:underline;">Exportar</a>
@@ -574,10 +617,13 @@ Excluir Dividendos (se pagan al final)
 <div class="panel">
 <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px;">
 <h3 style="margin:0;">Estado de Resultados del Mes <span style="color:var(--muted);font-weight:400;font-size:12.5px;">— Tocá el proyectado para editarlo</span></h3>
+<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+<button type="button" id="btn-minimizar-todo" style="padding:7px 13px;border-radius:8px;border:1px solid var(--border);background:var(--surface-2);color:var(--text-soft);font-size:12px;cursor:pointer;">▾ Ampliar todo</button>
 <div class="period-selector">
 <button type="button" class="icon-btn" id="btn-gf-prev-mes" title="Mes anterior">‹</button>
 <div class="period-label" id="gf-period-label">—</div>
 <button type="button" class="icon-btn" id="btn-gf-next-mes" title="Mes siguiente">›</button>
+</div>
 </div>
 </div>
 
@@ -1091,6 +1137,21 @@ Excluir Dividendos (se pagan al final)
 <button type="button" class="btn btn-cancel" id="btn-copiar-debug">Copiar</button>
 <button type="button" class="btn btn-primary" id="btn-importar-debug">Importar</button>
 </div>
+</div>
+</div>
+
+<div id="vista-anual" style="display:none;padding:24px 32px;max-width:1500px;margin:0 auto;">
+<a href="#" id="btn-volver-panel" style="display:inline-block;margin-bottom:14px;font-size:13px;color:var(--brand);text-decoration:underline;">← Volver al panel</a>
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;flex-wrap:wrap;gap:10px;">
+<div>
+<h1 style="font-family:var(--font-display);font-size:22px;margin:0 0 4px;">Cash Flow — Vista Anual</h1>
+<p style="color:var(--muted);font-size:13px;margin:0;">Tocá cualquier celda para editar el proyectado de ese mes puntual. Se guarda solo, conectado en vivo con el resto de la app.</p>
+</div>
+<select id="anual-year-select" style="padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;"></select>
+<button type="button" id="btn-anual-minimizar-todo" style="padding:8px 13px;border-radius:8px;border:1px solid var(--border);background:var(--surface-2);color:var(--text-soft);font-size:12.5px;cursor:pointer;">▾ Ampliar todo</button>
+</div>
+<div style="overflow-x:auto;">
+<table id="anual-table" style="width:100%;border-collapse:collapse;"></table>
 </div>
 </div>
 
@@ -2905,6 +2966,15 @@ toggleColMin("btn-min-planta", "col-planta-body", "col-resumen-planta");
 toggleColMin("btn-min-sub", "col-sub-body", "col-resumen-sub");
 
 let gfCategoriasAbiertas = {};
+let gfEstadoTodoExpandido = false;
+document.getElementById("btn-minimizar-todo") && document.getElementById("btn-minimizar-todo").addEventListener("click", function(){
+const claves = Array.from(document.querySelectorAll("#gf-grid-wrap [data-gf-toggle-cat]")).map(function(el){ return el.dataset.gfToggleCat; });
+const clavesUnicas = Array.from(new Set(claves));
+gfEstadoTodoExpandido = !gfEstadoTodoExpandido;
+clavesUnicas.forEach(function(key){ gfCategoriasAbiertas[key] = gfEstadoTodoExpandido; });
+this.textContent = gfEstadoTodoExpandido ? "▸ Minimizar todo" : "▾ Ampliar todo";
+renderGfGrid();
+});
 
 function formatSaldo(proy, real, esGasto){
 if(proy===null || real===null) return { text:'—', cls:'' };
@@ -2938,7 +3008,7 @@ if(real!==null){ catReal += real; catRealCount++; }
 const s = formatSaldo(proy, real, esGasto);
 return '<tr class="gf-detalle-row" data-gf-cat="' + escapeHtml(toggleKey) + '" style="display:none;">' +
 '<td style="padding-left:28px;display:flex;align-items:center;gap:4px;"><input type="text" class="gf-inline-input" data-gf-rename-item="' + gf.id + '" value="' + escapeHtml(gf.concepto || gf.nombre) + '" style="flex:1;"><button class="icon-btn danger" data-gf-del-item="' + gf.id + '" title="Borrar este renglón" style="flex-shrink:0;width:24px;height:24px;">' + ICONS.trash + '</button></td>' +
-'<td class="mono"><input type="number" class="gf-inline-input mono" data-gf-proy="' + gf.id + '|' + mes + '" value="' + (proy!==null?proy:'') + '" placeholder="—" style="' + (ov?'color:var(--sub);font-weight:700;':'') + '"></td>' +
+'<td class="mono"><div style="display:flex;align-items:center;gap:2px;"><span style="color:var(--muted);font-size:11.5px;">$</span><input type="number" class="gf-inline-input mono" data-gf-proy="' + gf.id + '|' + mes + '" value="' + (proy!==null?proy:'') + '" placeholder="—" style="' + (ov?'color:var(--sub);font-weight:700;':'') + '"></div></td>' +
 '<td class="mono" ' + (real!==null?'style="color:var(--planta);font-weight:700;"':'style="color:var(--border-strong);"') + '>' + (real!==null?('✓ '+money(real)):'—') + '</td>' +
 '<td class="mono ' + s.cls + '">' + s.text + '</td>' +
 '</tr>';
@@ -2954,9 +3024,9 @@ const proyDirecto = ovDirecto ? Number(STATE.categoriaProyeccionOverrides[catNom
 const realDirecto = STATE.movimientos.filter(function(m){ return (m.categoria||"")===catNombre && m.tipo===tipoCat && (m.fecha||"").slice(0,7)===mes; }).reduce(function(a,m){ return a+(Number(m.monto)||0); },0);
 catProy += proyDirecto;
 if(realDirecto>0){ catReal += realDirecto; catRealCount++; }
-proyCatCell = '<input type="number" class="gf-inline-input mono" data-gf-cat-proy-edit="' + escapeHtml(catNombre) + '|' + mes + '" value="' + proyDirecto + '" placeholder="Proyectado" style="' + (ovDirecto?'color:var(--sub);font-weight:700;':'') + '">';
+proyCatCell = '<div style="display:flex;align-items:center;gap:2px;"><span style="color:var(--muted);font-size:11.5px;">$</span><input type="number" class="gf-inline-input mono" data-gf-cat-proy-edit="' + escapeHtml(catNombre) + '|' + mes + '" value="' + proyDirecto + '" placeholder="Proyectado" style="' + (ovDirecto?'color:var(--sub);font-weight:700;':'') + '"></div>';
 } else if(items.length===0){
-proyCatCell = '<input type="number" class="gf-inline-input mono" placeholder="Proyectado" data-gf-cat-proy="' + escapeHtml(catNombre) + '|' + toggleKeyPrefix + '|' + mes + '">';
+proyCatCell = '<div style="display:flex;align-items:center;gap:2px;"><span style="color:var(--muted);font-size:11.5px;">$</span><input type="number" class="gf-inline-input mono" placeholder="Proyectado" data-gf-cat-proy="' + escapeHtml(catNombre) + '|' + toggleKeyPrefix + '|' + mes + '"></div>';
 } else {
 proyCatCell = catProy>0?money(catProy):'—';
 }
@@ -4049,14 +4119,214 @@ document.getElementById("od-fecha").value = new Date().toISOString().slice(0,10)
 gfMesSeleccionado = periodoStr();
 renderAll();
 iniciarTiempoReal();
+
+const temaGuardado = localStorage.getItem("lubacom-tema") || "light";
+aplicarTema(temaGuardado);
+document.getElementById("btn-toggle-theme").addEventListener("click", function(){
+const actual = document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light";
+aplicarTema(actual === "dark" ? "light" : "dark");
+});
+document.getElementById("btn-ver-anual").addEventListener("click", function(e){
+e.preventDefault();
+window.open(window.location.pathname + "#anual", "_blank");
+});
+}
+let anualCategoriasAbiertas = {};
+let anualEstadoTodoExpandido = false;
+async function arrancarVistaAnual(){
+await loadState();
+const temaGuardado = localStorage.getItem("lubacom-tema") || "light";
+aplicarTema(temaGuardado);
+document.getElementById("btn-toggle-theme") && document.getElementById("btn-toggle-theme").addEventListener("click", function(){
+const actual = document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "light";
+aplicarTema(actual === "dark" ? "light" : "dark");
+});
+document.getElementById("btn-volver-panel").addEventListener("click", function(e){
+e.preventDefault();
+window.close();
+setTimeout(function(){
+window.location.href = window.location.pathname;
+}, 200);
+});
+document.getElementById("btn-anual-minimizar-todo").addEventListener("click", function(){
+const claves = Array.from(document.querySelectorAll("#anual-table [data-anual-toggle-cat]")).map(function(el){ return el.dataset.anualToggleCat; });
+const clavesUnicas = Array.from(new Set(claves));
+anualEstadoTodoExpandido = !anualEstadoTodoExpandido;
+clavesUnicas.forEach(function(key){ anualCategoriasAbiertas[key] = anualEstadoTodoExpandido; });
+this.textContent = anualEstadoTodoExpandido ? "▸ Minimizar todo" : "▾ Ampliar todo";
+renderVistaAnualTabla();
+});
+
+const yearSel = document.getElementById("anual-year-select");
+const anioActual = Number(periodoStr().slice(0,4));
+yearSel.innerHTML = [anioActual, anioActual+1].map(function(y){ return '<option value="' + y + '">' + y + '</option>'; }).join("");
+yearSel.addEventListener("change", renderVistaAnualTabla);
+renderVistaAnualTabla();
+iniciarTiempoReal();
+setInterval(function(){
+const activo = document.activeElement;
+if(activo && (activo.hasAttribute("data-anual-item") || activo.hasAttribute("data-anual-nueva-cat"))) return;
+renderVistaAnualTabla();
+}, 4000);
+}
+
+function renderVistaAnualTabla(){
+const anio = document.getElementById("anual-year-select").value || periodoStr().slice(0,4);
+const mesInicioReal = periodoStr(); // ej "2026-08"
+const meses = [];
+const mesInicial = (anio === mesInicioReal.slice(0,4)) ? Number(mesInicioReal.slice(5,7)) : 1;
+for(let m=mesInicial;m<=12;m++){ meses.push(anio + "-" + String(m).padStart(2,"0")); }
+
+const clavesCubiertas = {};
+STATE.gastosFijos.forEach(function(gf){
+const tipoKey = gf.tipo === "ingreso" ? "ingreso" : "egreso";
+clavesCubiertas[tipoKey + "||" + (gf.categoria||"") + "||" + (gf.concepto||gf.nombre||"").trim().toLowerCase()] = true;
+});
+
+const items = STATE.gastosFijos.map(function(gf){
+return { tipo: gf.tipo==="ingreso"?"ingreso":"egreso", destino: gf.destino, categoria: gf.categoria||"(Sin categoría)", nombre: gf.concepto||gf.nombre, esDirecta:false, ref: gf };
+});
+Object.keys(STATE.categoriaProyeccion).forEach(function(cat){
+if(cat in clavesCubiertas) return;
+const info = STATE.categoriaProyeccion[cat];
+items.push({ tipo: info.tipo==="ingreso"?"ingreso":"egreso", destino: info.destino, categoria: cat, nombre: cat, esDirecta:true, ref: {categoria:cat} });
+});
+
+function valorDe(item, mes){
+if(item.esDirecta) return categoriaProyEfectivoParaMes(item.categoria, mes);
+return gfMontoEfectivo(item.ref, mes);
+}
+function setValorDe(item, mes, val){
+if(item.esDirecta){
+if(!STATE.categoriaProyeccionOverrides[item.categoria]) STATE.categoriaProyeccionOverrides[item.categoria] = {};
+STATE.categoriaProyeccionOverrides[item.categoria][mes] = val;
+} else {
+if(!STATE.gastosFijosOverrides[item.ref.id]) STATE.gastosFijosOverrides[item.ref.id] = {};
+STATE.gastosFijosOverrides[item.ref.id][mes] = val;
+}
+}
+
+// Mismas secciones que la vista mensual
+const SECCIONES = [
+{ key:"ING-PLANTA", titulo:"INGRESOS · Planta Propia", bg:"var(--planta-soft)", fg:"var(--planta)", match:function(it){ return it.tipo==="ingreso" && it.destino==="planta"; } },
+{ key:"ING-SUB", titulo:"INGRESOS · Subcontratados", bg:"var(--planta-soft)", fg:"var(--planta)", match:function(it){ return it.tipo==="ingreso" && it.destino==="subcontratado"; } },
+{ key:"FIJ", titulo:"GASTOS FIJOS · Planta Propia", bg:"var(--danger-soft)", fg:"var(--danger)", match:function(it){ return it.tipo!=="ingreso" && it.destino==="planta"; } },
+{ key:"VAR", titulo:"GASTOS VARIABLES · Subcontratados", bg:"var(--danger-soft)", fg:"var(--danger)", match:function(it){ return it.tipo!=="ingreso" && it.destino==="subcontratado"; } },
+{ key:"COM", titulo:"GASTOS COMUNES / TRANSVERSALES", bg:"var(--danger-soft)", fg:"var(--danger)", match:function(it){ return it.tipo!=="ingreso" && (it.destino==="ambos" || it.destino==="retiro" || !it.destino); } },
+{ key:"AHORRO", titulo:"AHORRO / PROVISIONES", bg:"#E7EAF3", fg:"#4B5871", match:function(it){ return it.destino==="ahorro"; } }
+];
+
+let head = '<thead><tr><th style="position:sticky;left:0;background:var(--surface);text-align:left;padding:8px 12px;border-bottom:2px solid var(--border-strong);min-width:200px;">Categoría / Concepto</th>';
+meses.forEach(function(mo){ head += '<th class="mono" style="padding:8px 10px;border-bottom:2px solid var(--border-strong);white-space:nowrap;">' + MESES_ABREV[Number(mo.slice(5,7))-1] + '</th>'; });
+head += '</tr></thead>';
+
+let body = '<tbody>';
+const totalesPorMes = {}; // mes -> {ingresos, gastos}
+meses.forEach(function(mo){ totalesPorMes[mo] = {ingresos:0, gastos:0}; });
+
+SECCIONES.forEach(function(secc){
+const itemsSeccion = items.filter(secc.match);
+body += '<tr><td colspan="' + (meses.length+1) + '" style="background:' + secc.bg + ';color:' + secc.fg + ';font-weight:700;padding:8px 12px;font-family:var(--font-display);">' + secc.titulo + '</td></tr>';
+const grupos = {};
+itemsSeccion.forEach(function(item){
+if(!grupos[item.categoria]) grupos[item.categoria] = [];
+grupos[item.categoria].push(item);
+});
+const cats = Object.keys(grupos);
+if(!cats.length){
+body += '<tr><td colspan="' + (meses.length+1) + '" style="padding:8px 12px;color:var(--muted);font-style:italic;">Nada cargado.</td></tr>';
+}
+const subtotalSeccion = {};
+meses.forEach(function(mo){ subtotalSeccion[mo] = 0; });
+cats.forEach(function(cat){
+const claveToggle = secc.key + "::" + cat;
+const abierta = !!anualCategoriasAbiertas[claveToggle];
+body += '<tr style="background:var(--surface-2);cursor:pointer;" data-anual-toggle-cat="' + escapeHtml(claveToggle) + '"><td style="position:sticky;left:0;background:var(--surface-2);padding:6px 12px;font-weight:700;"><span style="display:inline-block;width:14px;">' + (abierta?'▾':'▸') + '</span>' + escapeHtml(cat) + '</td>' + meses.map(function(){ return '<td></td>'; }).join("") + '</tr>';
+grupos[cat].forEach(function(item){
+body += '<tr class="anual-detalle-row" data-anual-cat="' + escapeHtml(claveToggle) + '" style="' + (abierta?'':'display:none;') + '"><td style="position:sticky;left:0;background:var(--surface);padding:6px 12px 6px 24px;color:var(--text-soft);">' + escapeHtml(item.nombre) + '</td>';
+meses.forEach(function(mo){
+const v = valorDe(item, mo);
+if(v){ subtotalSeccion[mo] += v; if(secc.key==="AHORRO"){} else if(item.tipo==="ingreso") totalesPorMes[mo].ingresos += v; else totalesPorMes[mo].gastos += v; }
+body += '<td class="mono" style="padding:2px;text-align:center;"><div style="display:flex;align-items:center;gap:2px;justify-content:flex-end;"><span style="color:var(--muted);font-size:10.5px;">$</span><input type="number" data-anual-item="' + items.indexOf(item) + '" data-anual-mes="' + mo + '" value="' + (v!==null?v:'') + '" placeholder="—" style="width:72px;padding:5px;border:1px solid transparent;border-radius:6px;text-align:right;font-family:var(--font-mono);font-size:12px;background:transparent;color:var(--text);"></div></td>';
+});
+body += '</tr>';
+});
+});
+body += '<tr style="background:' + secc.bg + '77;"><td style="position:sticky;left:0;background:' + secc.bg + ';padding:6px 12px;font-weight:700;">Subtotal ' + secc.titulo + '</td>' + meses.map(function(mo){ return '<td class="mono" style="text-align:right;padding:5px 8px;font-weight:700;">' + (subtotalSeccion[mo]>0?money(subtotalSeccion[mo]):'—') + '</td>'; }).join("") + '</tr>';
+body += '<tr><td style="position:sticky;left:0;background:var(--surface);padding:5px 12px 10px 24px;"><input type="text" placeholder="+ Nueva categoría…" data-anual-nueva-cat="' + secc.key + '" style="width:170px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--surface);color:var(--text);"></td>' + meses.map(function(){ return '<td></td>'; }).join("") + '</tr>';
+});
+
+body += '<tr><td colspan="' + (meses.length+1) + '" style="padding:6px 0;"></td></tr>';
+body += '<tr style="background:var(--brand-soft);"><td style="position:sticky;left:0;background:var(--brand-soft);padding:8px 12px;font-weight:700;">TOTAL INGRESOS</td>' + meses.map(function(mo){ return '<td class="mono" style="text-align:right;padding:6px 8px;font-weight:700;">' + (totalesPorMes[mo].ingresos>0?money(totalesPorMes[mo].ingresos):'—') + '</td>'; }).join("") + '</tr>';
+body += '<tr style="background:var(--danger-soft);"><td style="position:sticky;left:0;background:var(--danger-soft);padding:8px 12px;font-weight:700;">TOTAL GASTOS</td>' + meses.map(function(mo){ return '<td class="mono" style="text-align:right;padding:6px 8px;font-weight:700;">' + (totalesPorMes[mo].gastos>0?money(totalesPorMes[mo].gastos):'—') + '</td>'; }).join("") + '</tr>';
+body += '<tr style="background:var(--surface-2);"><td style="position:sticky;left:0;background:var(--surface-2);padding:8px 12px;font-weight:700;font-family:var(--font-display);">RESULTADO PROYECTADO</td>' + meses.map(function(mo){ const r = totalesPorMes[mo].ingresos - totalesPorMes[mo].gastos; return '<td class="mono" style="text-align:right;padding:6px 8px;font-weight:700;color:' + (r>=0?'var(--planta)':'var(--danger)') + ';">' + money(r) + '</td>'; }).join("") + '</tr>';
+body += '</tbody>';
+
+document.getElementById("anual-table").innerHTML = head + body;
+
+document.getElementById("anual-table").querySelectorAll("input[data-anual-item]").forEach(function(inp){
+inp.addEventListener("focus", function(){ this.style.borderColor = "var(--brand)"; this.style.background = "var(--surface)"; });
+inp.addEventListener("change", function(){
+const item = items[Number(this.dataset.anualItem)];
+const mes = this.dataset.anualMes;
+const val = this.value === "" ? null : Number(this.value);
+setValorDe(item, mes, val);
+saveState();
+document.getElementById("storage-status") && (document.getElementById("storage-status").textContent = "Guardado ✓");
+this.style.borderColor = "var(--planta-line)";
+});
+});
+
+document.getElementById("anual-table").querySelectorAll("input[data-anual-nueva-cat]").forEach(function(inp){
+inp.addEventListener("keydown", function(e){
+if(e.key !== "Enter") return;
+const nombre = this.value.trim();
+if(!nombre) return;
+const key = this.dataset.anualNuevaCat;
+const info = PREFIX_INFO[key] || {tipo:"egreso", destino:"planta"};
+const nombreCanonico = ensureCategoria(nombre);
+STATE.categoriaSecciones[nombreCanonico] = key;
+if(!(nombreCanonico in STATE.categoriaProyeccion)){
+STATE.categoriaProyeccion[nombreCanonico] = { monto: 0, destino: info.destino, tipo: info.tipo };
+}
+saveAndRender();
+renderVistaAnualTabla();
+toast('Categoría "' + nombre + '" creada — conectada con la vista mensual.');
+});
+});
+
+document.getElementById("anual-table").querySelectorAll("[data-anual-toggle-cat]").forEach(function(row){
+row.addEventListener("click", function(){
+const key = this.dataset.anualToggleCat;
+anualCategoriasAbiertas[key] = !anualCategoriasAbiertas[key];
+renderVistaAnualTabla();
+});
+});
+}
+
+function aplicarTema(tema){
+if(tema === "dark"){
+document.documentElement.setAttribute("data-theme", "dark");
+document.getElementById("btn-toggle-theme").textContent = "☀️ Modo claro";
+} else {
+document.documentElement.removeAttribute("data-theme");
+document.getElementById("btn-toggle-theme").textContent = "🌙 Modo oscuro";
+}
+localStorage.setItem("lubacom-tema", tema);
 }
 
 const CLAVE_ACCESO = "Redes2026";
 
 function mostrarApp(){
+try{ sessionStorage.setItem("lubacom-unlocked", "1"); }catch(e){}
 document.getElementById("lock-screen").style.display = "none";
+if(window.location.hash === "#anual"){
+document.getElementById("vista-anual").style.display = "block";
+arrancarVistaAnual();
+} else {
 document.getElementById("app").style.display = "flex";
 arrancarApp();
+}
 }
 
 function intentarClave(){
@@ -4074,7 +4344,13 @@ document.getElementById("lock-pass").addEventListener("keydown", function(e){
 if(e.key === "Enter") intentarClave();
 });
 
+let yaDesbloqueadoEnEstaSesion = false;
+try{ yaDesbloqueadoEnEstaSesion = sessionStorage.getItem("lubacom-unlocked") === "1"; }catch(e){}
+if(yaDesbloqueadoEnEstaSesion){
+mostrarApp();
+} else {
 document.getElementById("lock-pass").focus();
+}
 
 })();
 </script>
