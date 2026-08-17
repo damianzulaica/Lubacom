@@ -467,7 +467,7 @@ main.content{padding:22px 18px 50px;}
 <button id="btn-toggle-theme" style="width:100%;margin-top:8px;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--surface-2);color:var(--text);font-size:12.5px;cursor:pointer;">🌙 Modo oscuro</button>
 <div class="sidebar-foot" id="storage-status">Guardando localmente…</div>
 <div id="supabase-diag" style="display:none;padding:8px 10px;border-radius:8px;margin-top:8px;font-family:monospace;font-size:10.5px;font-weight:600;line-height:1.4;"></div>
-<div class="sidebar-foot" style="margin-top:4px;opacity:.6;">Versión: 2026-08-13.64 (fix scope + defensivo)</div>
+<div class="sidebar-foot" style="margin-top:4px;opacity:.6;">Versión: 2026-08-13.65 (fix borrar categoria)</div>
 <div class="sidebar-foot" style="margin-top:6px;"><a href="#" id="btn-debug" style="color:#2F6FED;text-decoration:underline;">Ver datos guardados (debug)</a></div>
 <div class="sidebar-foot" style="margin-top:6px;display:flex;gap:10px;">
 <a href="#" id="btn-exportar-archivo" style="color:#2F6FED;text-decoration:underline;">Exportar</a>
@@ -2793,9 +2793,13 @@ document.getElementById("categorias-lista").addEventListener("click", async func
 const del = e.target.closest("[data-cat-del]");
 if(!del) return;
 const idx = Number(del.dataset.catDel);
-const ok = await confirmDialog("¿Eliminar esta categoría de la lista? Los movimientos que ya la tenían la conservan como texto, pero no vas a poder volver a elegirla.", "Eliminar categoría");
+const nombreABorrar = STATE.categorias[idx];
+const ok = await confirmDialog("¿Eliminar esta categoría de la lista? Los movimientos que ya la tenían la conservan como texto, pero no vas a poder volver a elegirla. Si tenía una proyección directa cargada, también se borra.", "Eliminar categoría");
 if(!ok) return;
 STATE.categorias.splice(idx,1);
+delete STATE.categoriaProyeccion[nombreABorrar];
+delete STATE.categoriaProyeccionOverrides[nombreABorrar];
+delete STATE.categoriaSecciones[nombreABorrar];
 saveAndRender();
 renderCategoriasLista();
 });
@@ -3043,6 +3047,7 @@ const fila = '<tr class="gf-cat-row" style="background:' + (esGasto?'var(--dange
 '<span data-gf-toggle-cat="' + escapeHtml(toggleKey) + '" style="cursor:pointer;display:inline-block;width:14px;">' + (abierto?'▾':'▸') + '</span>' +
 '<strong>' + escapeHtml(catNombre) + '</strong>' +
 ' <span style="color:var(--muted);font-weight:400;font-size:11.5px;">(' + items.length + ')</span>' +
+' <button data-gf-del-categoria="' + escapeHtml(catNombre) + '" title="Borrar categoría" style="border:none;background:transparent;cursor:pointer;color:var(--muted);font-size:11px;margin-left:4px;">🗑</button>' +
 '</td>' +
 '<td class="mono">' + proyCatCell + '</td>' +
 '<td class="mono" data-gf-toggle-cat="' + escapeHtml(toggleKey) + '" style="cursor:pointer;">' + (catRealCount>0?money(catReal):'—') + '</td>' +
@@ -3300,12 +3305,28 @@ concEl.innerHTML = '✓ Todos los movimientos de este mes (' + conCategoria.leng
 }
 }
 let gfAddRapidoContexto = null;
-document.getElementById("gf-grid-wrap").addEventListener("click", function(e){
+document.getElementById("gf-grid-wrap").addEventListener("click", async function(e){
 const editItem = e.target.closest("[data-gf-edit]");
 if(editItem){ abrirEdicionGastoFijo(editItem.dataset.gfEdit); return; }
 
 const delItem = e.target.closest("[data-gf-del-item]");
 if(delItem){ borrarGastoFijo(delItem.dataset.gfDelItem); return; }
+
+const delCat = e.target.closest("[data-gf-del-categoria]");
+if(delCat){
+const nombre = delCat.dataset.gfDelCategoria;
+const ok = await confirmDialog('¿Borrar la categoría "' + nombre + '" por completo? Si tenía conceptos cargados adentro, también se borran. Los movimientos ya cargados la conservan como texto.', "Borrar categoría");
+if(!ok) return;
+const idx = STATE.categorias.findIndex(function(c){ return c===nombre; });
+if(idx!==-1) STATE.categorias.splice(idx,1);
+delete STATE.categoriaProyeccion[nombre];
+delete STATE.categoriaProyeccionOverrides[nombre];
+delete STATE.categoriaSecciones[nombre];
+STATE.gastosFijos = STATE.gastosFijos.filter(function(gf){ return gf.categoria !== nombre; });
+saveAndRender();
+toast('Categoría "' + nombre + '" borrada.');
+return;
+}
 
 const toggleCat = e.target.closest("[data-gf-toggle-cat]");
 if(toggleCat){
