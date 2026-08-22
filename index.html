@@ -324,6 +324,7 @@ select.mini{font-family:var(--font-body);font-size:12px;padding:5px 7px;border-r
 .mayores-layout{display:flex;gap:18px;align-items:flex-start;}
 .mayores-list-panel{width:290px;flex-shrink:0;max-height:640px;overflow-y:auto;}
 .mayores-detalle-panel{flex:1;min-width:0;}
+#mayor-detalle-body{overflow-x:auto;}
 .mayor-item{
 display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 11px;border-radius:var(--radius-sm);
 cursor:pointer;border:1px solid transparent;margin-bottom:4px;
@@ -467,7 +468,7 @@ main.content{padding:22px 18px 50px;}
 <button id="btn-toggle-theme" style="width:100%;margin-top:8px;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--surface-2);color:var(--text);font-size:12.5px;cursor:pointer;">🌙 Modo oscuro</button>
 <div class="sidebar-foot" id="storage-status">Guardando localmente…</div>
 <div id="supabase-diag" style="display:none;padding:8px 10px;border-radius:8px;margin-top:8px;font-family:monospace;font-size:10.5px;font-weight:600;line-height:1.4;"></div>
-<div class="sidebar-foot" style="margin-top:4px;opacity:.6;">Versión: 2026-08-13.65 (fix borrar categoria)</div>
+<div class="sidebar-foot" style="margin-top:4px;opacity:.6;">Versión: 2026-08-13.92 (filtro exacto por leyenda)</div>
 <div class="sidebar-foot" style="margin-top:6px;"><a href="#" id="btn-debug" style="color:#2F6FED;text-decoration:underline;">Ver datos guardados (debug)</a></div>
 <div class="sidebar-foot" style="margin-top:6px;display:flex;gap:10px;">
 <a href="#" id="btn-exportar-archivo" style="color:#2F6FED;text-decoration:underline;">Exportar</a>
@@ -664,6 +665,14 @@ Excluir Dividendos (se pagan al final)
 </table>
 </div>
 
+<div class="panel" id="panel-facturar-luba" style="display:none;">
+<h3 style="color:#B8860B;">⚠ Pendiente: Yoel debe facturar a LUBA <span style="color:var(--muted);font-weight:400;font-size:12.5px;">— plata que salió de una cuenta de LUBA hacia Yoel, todavía sin la factura correspondiente</span></h3>
+<table>
+<thead><tr><th>Fecha</th><th>De → A</th><th class="mono">Monto</th><th></th></tr></thead>
+<tbody id="facturar-luba-body"></tbody>
+</table>
+</div>
+
 <div class="panel">
 <h3>Otros Cobros y Gastos <span style="color:var(--muted);font-weight:400;font-size:12.5px;">— deudas sin comprobante formal (préstamos, saldos viejos, etc.)</span></h3>
 <div class="form-grid" style="grid-template-columns:1fr 1.3fr 1fr 1fr 1fr auto;gap:8px;align-items:end;margin-bottom:14px;">
@@ -696,23 +705,42 @@ Excluir Dividendos (se pagan al final)
 <section class="view" id="view-mayores">
 <div class="viewhead">
 <h1>Mayores</h1>
-<p>Historial completo, ordenado por fecha: por cliente/proveedor, o por cuenta bancaria.</p>
+<p>Historial completo, ordenado por fecha: por cliente/proveedor, por cuenta bancaria, o por categoría.</p>
+</div>
+<div class="panel" id="panel-facturar-luba-mayores" style="display:none;">
+<h3 style="color:#B8860B;">⚠ Pendiente: Yoel debe facturar a LUBA <span style="color:var(--muted);font-weight:400;font-size:12.5px;">— plata que salió de una cuenta de LUBA hacia Yoel, todavía sin la factura correspondiente</span></h3>
+<table>
+<thead><tr><th>Fecha</th><th>De → A</th><th class="mono">Monto</th><th></th></tr></thead>
+<tbody id="facturar-luba-mayores-body"></tbody>
+</table>
 </div>
 <div class="modal-tabs" id="mayores-modo-tabs" style="margin-bottom:18px;">
-<div class="modal-tab modal-tab-primary active" data-modo="entidad">Mayor de Entidades</div>
 <div class="modal-tab modal-tab-primary" data-modo="cuenta">Mayor de Cuentas</div>
+<div class="modal-tab modal-tab-primary active" data-modo="categoria">Mayor de Categorías</div>
+<div class="modal-tab modal-tab-primary" data-modo="historico">Histórico Mensual</div>
 </div>
-<div class="mayores-layout">
+<div class="mayores-layout" id="mayores-layout-normal">
 <div class="panel mayores-list-panel">
-<h3 id="mayores-list-title">Entidades</h3>
-<input type="text" id="mayores-buscar" placeholder="Buscar…" style="width:100%;padding:8px 10px;border-radius:var(--radius-sm);border:1px solid var(--border);font-family:var(--font-body);font-size:13px;margin-bottom:12px;background:var(--surface-2);color:var(--text);">
+<h3 id="mayores-list-title">Categorías</h3>
+<input type="text" id="mayores-buscar" placeholder="Buscar categoría…" style="width:100%;padding:8px 10px;border-radius:var(--radius-sm);border:1px solid var(--border);font-family:var(--font-body);font-size:13px;margin-bottom:12px;background:var(--surface-2);color:var(--text);">
 <div id="mayores-list"></div>
 </div>
 <div class="panel mayores-detalle-panel">
 <h3 id="mayor-detalle-title">Elegí uno de la lista</h3>
 <div id="mayor-resumen" style="margin-bottom:14px;"></div>
+<div id="mayor-detalle-filtros" style="display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap;">
+<input type="text" id="mayor-detalle-buscar" placeholder="Filtrar por entidad, categoría o detalle…" style="flex:1;min-width:200px;padding:7px 10px;border-radius:var(--radius-sm);border:1px solid var(--border);font-family:var(--font-body);font-size:12.5px;background:var(--surface-2);color:var(--text);">
+<select id="mayor-detalle-facturado-filtro" style="padding:7px 10px;border-radius:var(--radius-sm);border:1px solid var(--border);font-family:var(--font-body);font-size:12.5px;background:var(--surface-2);color:var(--text);">
+<option value="todos">Facturado: Todos</option>
+<option value="si">Ingresos facturados</option>
+<option value="no">Ingresos sin factura</option>
+</select>
+</div>
 <div id="mayor-detalle-body"></div>
 </div>
+</div>
+<div class="panel" id="mayores-historico-panel" style="display:none;">
+<div id="mayores-historico-body"></div>
 </div>
 </section>
 
@@ -745,6 +773,63 @@ Excluir Dividendos (se pagan al final)
 <div class="modal-tabs" id="modal-tabs-primary">
 <div class="modal-tab modal-tab-primary active" data-primary="movimiento">Movimiento</div>
 <div class="modal-tab modal-tab-primary" data-primary="factura">Factura</div>
+<div class="modal-tab modal-tab-primary" data-primary="ajuste">Ajuste</div>
+<div class="modal-tab modal-tab-primary" data-primary="transferencia">Transferencia</div>
+</div>
+
+<div id="form-ajuste" style="display:none;">
+<div class="form-row">
+<label>Cuenta</label>
+<select id="aj-cuenta"></select>
+</div>
+<div class="form-row">
+<label>Monto (con signo: negativo si baja el saldo, positivo si lo sube)</label>
+<input type="number" id="aj-monto" step="0.01" placeholder="Ej: -116000">
+</div>
+<div class="form-row">
+<label>Fecha</label>
+<input type="date" id="aj-fecha">
+</div>
+<div class="form-row">
+<label>Nota (opcional)</label>
+<input type="text" id="aj-nota" placeholder="Ej: Diferencia de conciliación bancaria">
+</div>
+<div class="modal-actions">
+<button type="button" class="btn btn-cancel" id="btn-cancel-ajuste">Cancelar</button>
+<button type="button" class="btn btn-primary" id="btn-guardar-ajuste">Guardar ajuste</button>
+</div>
+</div>
+
+<div id="form-transferencia" style="display:none;">
+<div class="form-grid">
+<div class="form-row">
+<label>Cuenta origen (de donde sale)</label>
+<select id="tr-origen"></select>
+</div>
+<div class="form-row">
+<label>Cuenta destino (a donde entra)</label>
+<select id="tr-destino"></select>
+</div>
+</div>
+<div class="form-row">
+<label>Monto</label>
+<input type="number" id="tr-monto" step="0.01" placeholder="0.00">
+</div>
+<div class="form-row">
+<label>Fecha</label>
+<input type="date" id="tr-fecha">
+</div>
+<div class="form-row">
+<label>Nota (opcional)</label>
+<input type="text" id="tr-nota" placeholder="Ej: Fondeo mensual">
+</div>
+<div id="tr-alerta-luba" style="display:none;background:var(--sub-soft);border:1px solid var(--sub-line);border-radius:8px;padding:10px 12px;font-size:12.5px;margin-bottom:6px;">
+⚠ Esta transferencia sale de Allaria + Yoel hacia una cuenta de LUBA — queda marcada para recordarte facturarla a LUBA.
+</div>
+<div class="modal-actions">
+<button type="button" class="btn btn-cancel" id="btn-cancel-transferencia">Cancelar</button>
+<button type="button" class="btn btn-primary" id="btn-guardar-transferencia">Guardar transferencia</button>
+</div>
 </div>
 
 <div class="modal-tabs" id="modal-tabs-secondary">
@@ -783,6 +868,12 @@ Excluir Dividendos (se pagan al final)
 <label>Cuenta</label>
 <select id="f-cuenta"></select>
 </div>
+</div>
+<div class="form-row" id="f-yoel-row" style="display:none;">
+<label style="display:flex;align-items:center;gap:6px;font-weight:400;cursor:pointer;">
+<input type="checkbox" id="f-yoel-factura">
+Esto va hacia Yoel (Allaria + Yoel / Mercado Pago) — queda marcado para recordar que Yoel se lo tiene que facturar a LUBA
+</label>
 </div>
 <div class="form-grid">
 <div class="form-row">
@@ -1100,9 +1191,46 @@ Excluir Dividendos (se pagan al final)
 <select id="cobro-subcontratado-select"></select>
 <input type="text" id="cobro-subcontratado-new" placeholder="Nombre del subcontratado nuevo" style="margin-top:8px;display:none;">
 </div>
+<div class="form-row">
+<a href="#" id="toggle-cobro-retenciones" style="font-size:12.5px;color:var(--brand);text-decoration:underline;display:inline-block;">▸ Retenciones</a>
+<div id="cobro-retenciones-body" style="display:none;margin-top:8px;">
+<div class="form-grid" style="grid-template-columns:1fr 1fr;gap:8px;">
+<div><label style="font-size:11.5px;">IVA</label><input type="number" id="ret-iva" step="0.01" placeholder="0.00"></div>
+<div><label style="font-size:11.5px;">Ganancias</label><input type="number" id="ret-ganancias" step="0.01" placeholder="0.00"></div>
+<div><label style="font-size:11.5px;">IIBB</label><input type="number" id="ret-iibb" step="0.01" placeholder="0.00"></div>
+<div><label style="font-size:11.5px;">Otros</label><input type="number" id="ret-otros" step="0.01" placeholder="0.00"></div>
+<div style="grid-column:span 2;"><label style="font-size:11.5px;">Imp. Débito y Crédito</label><input type="number" id="ret-impdebcred" step="0.01" placeholder="0.00"></div>
+</div>
+<div style="font-size:11px;color:var(--muted);margin-top:4px;">Las que se calculan solas (IVA, Imp. Déb/Créd, y Ganancias si es un ingreso) ya vienen con el importe estimado — corregilas si el número real fue distinto. IIBB y Otros los cargás vos si corresponde.</div>
+</div>
+</div>
 <div class="modal-actions">
 <button type="button" class="btn btn-cancel" id="btn-cancel-cobro">Cancelar</button>
 <button type="button" class="btn btn-primary" id="btn-confirm-cobro">Confirmar</button>
+</div>
+</div>
+</div>
+
+<!-- ============ MODAL: ver / editar gastos y retenciones de una factura ya cobrada/pagada ============ -->
+<div class="modal-overlay" id="modal-retenciones-overlay">
+<div class="modal" style="max-width:480px;">
+<h2>Gastos y Retenciones</h2>
+<div class="modal-sub" id="retenciones-modal-sub"></div>
+<div class="form-row">
+<label>Monto del movimiento</label>
+<div class="mono" id="retenciones-monto-actual" style="font-size:18px;font-weight:700;padding:6px 0;"></div>
+</div>
+<div class="form-grid" style="grid-template-columns:1fr 1fr;gap:8px;">
+<div><label style="font-size:11.5px;">IVA</label><input type="number" id="edret-iva" step="0.01" placeholder="0.00"></div>
+<div><label style="font-size:11.5px;">Ganancias</label><input type="number" id="edret-ganancias" step="0.01" placeholder="0.00"></div>
+<div><label style="font-size:11.5px;">IIBB</label><input type="number" id="edret-iibb" step="0.01" placeholder="0.00"></div>
+<div><label style="font-size:11.5px;">Otros</label><input type="number" id="edret-otros" step="0.01" placeholder="0.00"></div>
+<div style="grid-column:span 2;"><label style="font-size:11.5px;">Imp. Débito y Crédito</label><input type="number" id="edret-impdebcred" step="0.01" placeholder="0.00"></div>
+</div>
+<div class="hint" style="margin-top:8px;">Esto edita las retenciones del movimiento real ya cargado (no la factura en sí). Se refleja al toque en Mayores.</div>
+<div class="modal-actions">
+<button type="button" class="btn btn-cancel" id="btn-cancel-retenciones">Cancelar</button>
+<button type="button" class="btn btn-primary" id="btn-guardar-retenciones">Guardar</button>
 </div>
 </div>
 </div>
@@ -1270,6 +1398,66 @@ delete STATE.categoriaProyeccion[nombreABorrar];
 }
 delete STATE.categoriaProyeccionOverrides[nombreABorrar];
 STATE.categorias.splice(idx, 1);
+}
+
+const CUENTAS_LUBA_MIG = ["Banco Macro", "Banco Galicia", "Allaria + Luba"];
+const CUENTAS_YOEL_MIG = ["Allaria + Yoel", "Mercado Pago"];
+function migrarTransferenciasYoelLubaHistoricas(){
+// Paso 1: reparar cualquier par Yoel-Luba que haya quedado mal marcado como "transferencia" neutral
+// (versión anterior tenía el criterio incorrecto).
+STATE.movimientos.forEach(function(m){
+if(m.destino==="transferencia" && m.cuentaOrigen && m.cuentaDestino){
+const origenEsYoel = CUENTAS_YOEL_MIG.indexOf(m.cuentaOrigen)!==-1;
+const destinoEsYoel = CUENTAS_YOEL_MIG.indexOf(m.cuentaDestino)!==-1;
+const origenEsLuba = CUENTAS_LUBA_MIG.indexOf(m.cuentaOrigen)!==-1;
+const destinoEsLuba = CUENTAS_LUBA_MIG.indexOf(m.cuentaDestino)!==-1;
+if((origenEsYoel && destinoEsLuba) || (origenEsLuba && destinoEsYoel)){
+m.destino = "sin_clasificar";
+m.requiereFacturaLuba = false;
+}
+}
+});
+
+// Paso 2: buscar pares no vinculados y aplicar el criterio correcto.
+const yoelEgresos = STATE.movimientos.filter(function(m){ return CUENTAS_YOEL_MIG.indexOf(m.cuenta)!==-1 && m.tipo==="egreso" && !m.transferenciaId; });
+const lubaIngresos = STATE.movimientos.filter(function(m){ return CUENTAS_LUBA_MIG.indexOf(m.cuenta)!==-1 && m.tipo==="ingreso" && !m.transferenciaId; });
+const lubaEgresos = STATE.movimientos.filter(function(m){ return CUENTAS_LUBA_MIG.indexOf(m.cuenta)!==-1 && m.tipo==="egreso" && !m.transferenciaId; });
+const yoelIngresos = STATE.movimientos.filter(function(m){ return CUENTAS_YOEL_MIG.indexOf(m.cuenta)!==-1 && m.tipo==="ingreso" && !m.transferenciaId; });
+const usados = {};
+
+// Yoel -> Luba = Aporte de socio
+const categoriaAporte = ensureCategoria("Aporte de Socios");
+yoelEgresos.forEach(function(me){
+const match = lubaIngresos.find(function(mi){ return !usados[mi.id] && mi.fecha===me.fecha && Math.abs((Number(mi.monto)||0)-(Number(me.monto)||0)) < 1; });
+if(match){
+usados[match.id] = true;
+const tid = uid();
+me.transferenciaId = tid; me.cuentaOrigen = me.cuenta; me.cuentaDestino = match.cuenta; me.categoria = categoriaAporte; me.esAporteSocios = true;
+match.transferenciaId = tid; match.cuentaOrigen = me.cuenta; match.cuentaDestino = match.cuenta; match.categoria = categoriaAporte; match.esAporteSocios = true;
+}
+});
+
+// Luba -> Yoel = Egreso real, Yoel debe facturar
+lubaEgresos.forEach(function(me){
+const match = yoelIngresos.find(function(mi){ return !usados[mi.id] && mi.fecha===me.fecha && Math.abs((Number(mi.monto)||0)-(Number(me.monto)||0)) < 1; });
+if(match){
+usados[match.id] = true;
+const tid = uid();
+me.transferenciaId = tid; me.cuentaOrigen = me.cuenta; me.cuentaDestino = match.cuenta; me.requiereFacturaYoel = true;
+match.transferenciaId = tid; match.cuentaOrigen = me.cuenta; match.cuentaDestino = match.cuenta; match.requiereFacturaYoel = true;
+}
+});
+}
+
+// Egresos sueltos (sin par cargado) desde una cuenta de LUBA cuya Entidad menciona "Yoel" —
+// se marcan igual para el aviso, sin necesidad de que exista el ingreso del otro lado.
+function migrarEgresosSueltosHaciaYoel(){
+STATE.movimientos.forEach(function(m){
+if(m.tipo!=="egreso" || m.transferenciaId || m.requiereFacturaYoel) return;
+if(CUENTAS_LUBA_MIG.indexOf(m.cuenta)===-1) return;
+if((m.entidad||"").toLowerCase().indexOf("yoel") === -1) return;
+m.requiereFacturaYoel = true;
+});
 }
 
 function migrarSuscripcionRescate(){
@@ -1479,6 +1667,8 @@ limpiarCategoriasDuplicadas();
 eliminarCategoria("OTRAS COBRANZAS", "Otros Cobros");
 migrarCategoriasCompletasViejas();
 migrarSuscripcionRescate();
+migrarTransferenciasYoelLubaHistoricas();
+migrarEgresosSueltosHaciaYoel();
 }
 
 document.getElementById("navlist").addEventListener("click", function(e){
@@ -1519,12 +1709,13 @@ cat==="rescate iva" || cat==="rescate inversión" || cat==="rescate inversion";
 
 // Débito/Crédito: solo entradas y salidas normales — no aplica a cuentas exentas ni a Suscripción/Rescate.
 function impuestoDebCredFor(m){
-if(cuentaExenta(m.cuenta) || esMovimientoFondo(m)) return 0;
+if(m.destino==="ajuste" || m.destino==="transferencia" || cuentaExenta(m.cuenta) || esMovimientoFondo(m)) return 0;
 return (Number(m.monto)||0) * TASA_IMP_DEBCRED;
 }
-// Ganancias: 0,8% en ingresos normales. Nunca en cuentas exentas ni en Suscripción/Rescate.
+// Ganancias: 0,8% en ingresos normales. Nunca en cuentas exentas, Suscripción/Rescate, Ajustes de saldo,
+// Transferencias internas, ni Aportes de Socios (no son venta, son capital).
 function retencionGananciasFor(m){
-if(cuentaExenta(m.cuenta) || esMovimientoFondo(m)) return 0;
+if(m.destino==="ajuste" || m.destino==="transferencia" || m.destino==="aporte" || cuentaExenta(m.cuenta) || esMovimientoFondo(m)) return 0;
 if(m.tipo==="ingreso") return (Number(m.monto)||0) * TASA_GANANCIAS;
 return 0;
 }
@@ -1534,8 +1725,8 @@ let ingreso=0, egreso=0, impuesto=0, retencionGanancias=0;
 movs.forEach(function(m){
 const v = Number(m.monto)||0;
 if(m.tipo==="ingreso") ingreso += v; else egreso += v;
-impuesto += impuestoDebCredFor(m);
-retencionGanancias += retencionGananciasFor(m);
+impuesto += impDebCredEfectivo(m);
+retencionGanancias += gananciasEfectivo(m);
 });
 return {ingreso: ingreso, egreso: egreso, impuesto: impuesto, retencionGanancias: retencionGanancias, neto: ingreso - egreso - impuesto - retencionGanancias};
 }
@@ -1545,6 +1736,27 @@ const m = Number(monto)||0;
 if (iva === "21") return m * 21/121;
 if (iva === "10.5") return m * 10.5/110.5;
 return 0;
+}
+
+// Preferí siempre la retención REAL que se cargó a mano en el momento del cobro/pago
+// por sobre la fórmula teórica — así Mayores refleja lo que realmente pasó.
+function tieneRetencionGuardada(m, campo){
+return m.retenciones && m.retenciones[campo] !== undefined && m.retenciones[campo] !== null;
+}
+function ivaEfectivo(m){
+if(tieneRetencionGuardada(m,"iva")) return m.retenciones.iva;
+return ivaAmount(m.monto, m.iva);
+}
+function gananciasEfectivo(m){
+if(tieneRetencionGuardada(m,"ganancias")) return m.retenciones.ganancias;
+return retencionGananciasFor(m);
+}
+function impDebCredEfectivo(m){
+if(tieneRetencionGuardada(m,"impDebCred")) return m.retenciones.impDebCred;
+return impuestoDebCredFor(m);
+}
+function iibbEfectivo(m){
+return tieneRetencionGuardada(m,"iibb") ? m.retenciones.iibb : 0;
 }
 
 function computeKPIs(){
@@ -1565,11 +1777,11 @@ const ivaReservado = ivaDebito;
 const posicionIva = ivaDebito - ivaCredito;
 const ivaFondeado = Math.abs(netOf(STATE.movimientos.filter(function(m){ return m.destino==="ahorro" && m.esPagoIva===true; })).neto);
 const diferenciaIva = ivaReservado - ivaFondeado;
-// Plata ya apartada como Ahorro (cualquier motivo) — ya no cuenta como disponible, aunque siga
-// físicamente en alguna cuenta. Además se resta la reserva teórica de IVA todavía no fondeada,
-// para no mostrar como "libre" algo que en la práctica está comprometido.
+const ivaPendienteDeFondear = Math.max(0, diferenciaIva);
+// Plata ya apartada como Ahorro (cualquier motivo, incluido lo ya fondeado de IVA) — ya no cuenta como disponible.
+// Del IVA teórico total, solo restamos lo que TODAVÍA no está fondeado (para no descontarlo dos veces).
 const ahorroApartado = Math.max(0, netOf(STATE.movimientos.filter(function(m){ return m.destino==="ahorro"; })).neto);
-const disponibleBruto = saldoCuentas - ahorroApartado - ivaReservado;
+const disponibleBruto = saldoCuentas - ahorroApartado - ivaPendienteDeFondear;
 const disponible = Math.max(0, disponibleBruto);
 const totalesImpuestos = netOf(STATE.movimientos);
 const impuestoDebCred = totalesImpuestos.impuesto;
@@ -1577,7 +1789,7 @@ const retencionGananciasTotal = totalesImpuestos.retencionGanancias;
 return {
 planta: planta, sub: sub, retiros: retiros, disponible: disponible, disponibleBruto: disponibleBruto,
 ahorroApartado: ahorroApartado,
-ivaReservado: ivaReservado, ivaFondeado: ivaFondeado, diferenciaIva: diferenciaIva,
+ivaReservado: ivaReservado, ivaFondeado: ivaFondeado, diferenciaIva: diferenciaIva, ivaPendienteDeFondear: ivaPendienteDeFondear,
 ivaDebito: ivaDebito, ivaCredito: ivaCredito, posicionIva: posicionIva,
 impuestoDebCred: impuestoDebCred, retencionGananciasTotal: retencionGananciasTotal
 };
@@ -1672,58 +1884,13 @@ const facturasPendientes = STATE.facturas
 .reduce(function(acc,f){ return acc + (Number(f.monto)||0); }, 0);
 
 const detalleCategorias = [];
-let dividendosPendientes = 0;
-const porCategoria = {};
-STATE.gastosFijos.filter(function(gf){ return gf.tipo !== "ingreso"; }).forEach(function(gf){
-const proy = gfMontoEfectivo(gf, mesActual);
-if(proy === null) return;
-const real = gfRealParaMes(gf, mesActual) || 0;
-const pendiente = Math.max(0, proy - real);
-const cat = gf.categoria || "(Sin categoría)";
-const esDividendos = cat.trim().toLowerCase() === "dividendos";
-if(esDividendos) dividendosPendientes += pendiente;
-if(esDividendos && excluirDividendos) return;
-if(!porCategoria[cat]) porCategoria[cat] = { pagado:0, falta:0 };
-porCategoria[cat].pagado += Math.min(real, proy);
-porCategoria[cat].falta += pendiente;
-});
-Object.keys(STATE.categoriaProyeccion).forEach(function(cat){
-const info = STATE.categoriaProyeccion[cat];
-if(info.tipo === "ingreso") return;
-const proy = categoriaProyEfectivoParaMes(cat, mesActual);
-const real = STATE.movimientos.filter(function(m){ return (m.categoria||"")===cat && m.tipo==="egreso" && (m.fecha||"").slice(0,7)===mesActual; }).reduce(function(a,m){ return a+(Number(m.monto)||0); },0);
-const pendiente = Math.max(0, proy - real);
-const esDividendos = cat.trim().toLowerCase() === "dividendos";
-if(esDividendos) dividendosPendientes += pendiente;
-if(esDividendos && excluirDividendos) return;
-if(!porCategoria[cat]) porCategoria[cat] = { pagado:0, falta:0 };
-porCategoria[cat].pagado += Math.min(real, proy);
-porCategoria[cat].falta += pendiente;
-});
+const resultado = computeGastosPorCategoria(mesActual, excluirDividendos);
+const porCategoria = resultado.porCategoria;
+const dividendosPendientes = resultado.dividendosPendientes;
 
-// ---- Mismo método que Cash Flow: total proyectado del mes menos total real del mes (agregado, no por item) ----
-const proyGastosTotalGF = STATE.gastosFijos.filter(function(gf){
-if(gf.tipo === "ingreso") return false;
-if(excluirDividendos && (gf.categoria||"").trim().toLowerCase()==="dividendos") return false;
-return true;
-}).reduce(function(acc,gf){ const v=gfMontoEfectivo(gf,mesActual); return acc+(v||0); }, 0);
-const proyGastosTotalCat = Object.keys(STATE.categoriaProyeccion).reduce(function(acc,cat){
-const info = STATE.categoriaProyeccion[cat];
-if(info.tipo === "ingreso") return acc;
-if(excluirDividendos && cat.trim().toLowerCase()==="dividendos") return acc;
-return acc + categoriaProyEfectivoParaMes(cat, mesActual);
-}, 0);
-const proyGastosTotal = proyGastosTotalGF + proyGastosTotalCat;
-
-const realGastosTotal = STATE.movimientos.filter(function(m){
-if(m.tipo!=="egreso") return false;
-if((m.fecha||"").slice(0,7)!==mesActual) return false;
-if(excluirDividendos && (m.categoria||"").trim().toLowerCase()==="dividendos") return false;
-return true;
-}).reduce(function(acc,m){ return acc+(Number(m.monto)||0); }, 0);
-
-const gastosFijosPendientes = Math.max(0, proyGastosTotal - realGastosTotal);
-const gastosFijosPagado = Math.min(realGastosTotal, proyGastosTotal);
+// ---- El total de arriba es, literal, la suma del desglose por categoría de abajo (misma fuente que el KPI de Cash Flow) ----
+const gastosFijosPendientes = resultado.totalFalta;
+const gastosFijosPagado = resultado.totalPagado;
 
 const gastosPorPagar = facturasPendientes + gastosFijosPendientes;
 const totalObligacion = gastosPorPagar + gastosFijosPagado;
@@ -1737,11 +1904,15 @@ document.getElementById("thermo-total").textContent = money(gastosPorPagar);
 document.getElementById("thermo-pagado").textContent = money(gastosFijosPagado);
 const dividendosNota = (excluirDividendos && dividendosPendientes>0) ? (' Dividendos excluidos aparte: ' + money(dividendosPendientes) + '.') : '';
 
+const otrosPagadosNota = resultado.otrosPagadosSinProyectar>0
+? ('<div style="margin-top:6px;padding-top:6px;border-top:1px dashed var(--border);color:var(--muted);">➕ Otros pagados (sin presupuesto asignado, no cuenta en el total): <strong style="color:var(--text-soft);">' + money(resultado.otrosPagadosSinProyectar) + '</strong></div>')
+: '';
+
 if(totalObligacion <= 0){
 fillPagadoEl.style.width = "0%";
 fillDisponibleEl.style.width = "0%";
 fillFaltaEl.style.width = "0%";
-hintEl.textContent = "No hay deudas por compras ni gastos fijos pendientes este mes." + dividendosNota;
+hintEl.innerHTML = "No hay deudas por compras ni gastos fijos pendientes este mes." + dividendosNota + otrosPagadosNota;
 dispLabelEl.innerHTML = '<span style="color:var(--planta);">✓ Disponible: ' + money(disponible) + ' — no hay nada urgente que pagar.</span>';
 } else {
 const pctPagadoGlobal = (gastosFijosPagado / totalObligacion) * 100;
@@ -1754,7 +1925,7 @@ fillFaltaEl.style.width = pctFaltaSinCubrir + "%";
 const pctDisponibleDeLoQueFalta = Math.round(Math.min(100, (disponible / gastosPorPagar) * 100));
 const colorCobertura = pctDisponibleDeLoQueFalta>=100 ? "var(--planta)" : (pctDisponibleDeLoQueFalta>=50 ? "#B8860B" : "var(--danger)");
 dispLabelEl.innerHTML = '<span style="color:' + colorCobertura + ';">Disponible: ' + money(disponible) + ' — cubre el ' + pctDisponibleDeLoQueFalta + '% de lo que falta pagar</span>';
-hintEl.textContent = "Incluye facturas por pagar (" + money(facturasPendientes) + ") y gastos fijos del mes aún no reflejados como reales (" + money(gastosFijosPendientes) + ")." + dividendosNota;
+hintEl.innerHTML = "Incluye facturas por pagar (" + money(facturasPendientes) + ") y gastos fijos del mes aún no reflejados como reales (" + money(gastosFijosPendientes) + ")." + dividendosNota + otrosPagadosNota;
 }
 
 // ---- Detalle expandible: barras de pagado vs falta ----
@@ -1824,6 +1995,7 @@ return '<div class="unclassified-card">' +
 '<div class="uc-secondary-row">' +
 '<button class="btn-retiro" data-act="retiro" data-id="' + m.id + '">🎩 Retiro</button>' +
 '<button class="btn-ahorro" data-act="ahorro" data-id="' + m.id + '">🐷 Ahorro</button>' +
+'<button class="btn-ahorro" data-act="iva" data-id="' + m.id + '" title="Ahorro + Pago de IVA, directo" style="background:var(--brand-soft);color:var(--brand);border-color:var(--brand-line);">💰 IVA</button>' +
 '<button class="icon-btn" data-act="recurrente" data-id="' + m.id + '" title="Convertir en Gasto Fijo recurrente">🔁</button>' +
 '<button class="icon-btn" data-act="editar" data-id="' + m.id + '" title="Editar">' + ICONS.edit + '</button>' +
 '<button class="icon-btn danger" data-act="borrar" data-id="' + m.id + '" title="Borrar">' + ICONS.trash + '</button>' +
@@ -1952,6 +2124,10 @@ else if(act==="sub100"){ openSubcModal(id); }
 else if(act==="ambos"){ setDestino(id, "ambos"); }
 else if(act==="retiro"){ setDestino(id, "retiro"); }
 else if(act==="ahorro"){ setDestino(id, "ahorro"); }
+else if(act==="iva"){
+const m = STATE.movimientos.find(function(x){ return x.id===id; });
+if(m){ m.destino = "ahorro"; m.subcontratadoId = null; m.esPagoIva = true; saveAndRender(); toast("Marcado como Ahorro + Pago de IVA."); }
+}
 else if(act==="split"){ openSplitModal(id); }
 else if(act==="editar"){ openEditModal(id); }
 else if(act==="borrar"){ borrarMovimiento(id); }
@@ -1998,6 +2174,16 @@ if(cb) cb();
 });
 
 async function borrarMovimiento(id){
+const movimiento = STATE.movimientos.find(function(m){ return m.id===id; });
+if(movimiento && movimiento.transferenciaId){
+const ok = await confirmDialog("Este movimiento es una punta de una transferencia entre cuentas. Si lo borrás, se borran las dos puntas juntas. ¿Confirmás?", "Borrar transferencia");
+if(!ok) return;
+const tid = movimiento.transferenciaId;
+STATE.movimientos = STATE.movimientos.filter(function(m){ return m.transferenciaId!==tid; });
+saveAndRender();
+toast("Transferencia borrada (las dos puntas).");
+return;
+}
 const facturaVinculada = STATE.facturas.find(function(f){ return f.movimientoId === id; });
 if(facturaVinculada){
 const confirmMsg = "Este movimiento está vinculado a la factura " + facturaVinculada.numeroFactura + ". Si lo borrás, la factura vuelve a estado " + (facturaVinculada.estadoAnterior==="vencida"?"Vencida":"Pendiente") + ". ¿Confirmás?";
@@ -2284,13 +2470,29 @@ function switchPrimaryTab(tab){
 document.querySelectorAll("#modal-tabs-primary .modal-tab").forEach(function(t){ t.classList.toggle("active", t.dataset.primary===tab); });
 document.getElementById("modal-tabs-secondary").style.display = tab==="movimiento" ? "flex":"none";
 formFactura.style.display = tab==="factura" ? "block":"none";
+document.getElementById("form-ajuste").style.display = tab==="ajuste" ? "block":"none";
+document.getElementById("form-transferencia").style.display = tab==="transferencia" ? "block":"none";
 if(tab==="movimiento"){
 switchSecondaryTab("manual");
 document.getElementById("modal-subtext").textContent = "Plata que efectivamente entró o salió de una cuenta. Siempre está percibida, esté facturada o no.";
-} else {
+} else if(tab==="factura"){
 formMovimiento.style.display = "none";
 document.getElementById("form-masiva").style.display = "none";
 document.getElementById("modal-subtext").textContent = "Documento emitido o recibido. No implica que el dinero ya se cobró o se pagó.";
+} else if(tab==="ajuste"){
+formMovimiento.style.display = "none";
+document.getElementById("form-masiva").style.display = "none";
+document.getElementById("modal-subtext").textContent = "Corrección de saldo sin contrapartida (ej: diferencia de conciliación bancaria). No pide categoría ni clasificación, solo ajusta el saldo de la cuenta.";
+document.getElementById("aj-fecha").value = document.getElementById("aj-fecha").value || new Date().toISOString().slice(0,10);
+} else {
+formMovimiento.style.display = "none";
+document.getElementById("form-masiva").style.display = "none";
+document.getElementById("modal-subtext").textContent = "Plata que pasa de una cuenta propia a otra. Se cargan las dos puntas juntas, no cuenta como Ingreso ni Gasto real.";
+document.getElementById("tr-fecha").value = document.getElementById("tr-fecha").value || new Date().toISOString().slice(0,10);
+document.getElementById("tr-origen").innerHTML = STATE.cuentas.map(function(c){ return '<option value="' + escapeHtml(c) + '">' + escapeHtml(c) + '</option>'; }).join("");
+document.getElementById("tr-destino").innerHTML = STATE.cuentas.map(function(c){ return '<option value="' + escapeHtml(c) + '">' + escapeHtml(c) + '</option>'; }).join("");
+if(STATE.cuentas.length>1) document.getElementById("tr-destino").selectedIndex = 1;
+actualizarAlertaLuba();
 }
 }
 function switchSecondaryTab(tab){
@@ -2320,6 +2522,11 @@ formFactura.reset();
 setTipoUI(tipoGroup, "ingreso");
 setTipoUI(tipoFactGroup, "emitida");
 fillCuentaSelect();
+actualizarVisibilidadYoelCheckbox();
+document.getElementById("aj-cuenta").innerHTML = STATE.cuentas.map(function(c){ return '<option value="' + escapeHtml(c) + '">' + escapeHtml(c) + '</option>'; }).join("");
+document.getElementById("aj-monto").value = "";
+document.getElementById("aj-nota").value = "";
+document.getElementById("aj-fecha").value = new Date().toISOString().slice(0,10);
 fillSimpleListSelect("f-categoria-select", "f-categoria-new", "categorias", "Ninguna");
 fillSimpleListSelect("f-subconcepto-select", "f-subconcepto-new", "subconceptos", "Ninguno");
 document.getElementById("ff-estado").disabled = false;
@@ -2365,6 +2572,8 @@ fillSimpleListSelect("f-subconcepto-select", "f-subconcepto-new", "subconceptos"
 setSelectValueEnsuring("f-categoria-select", "categorias", m.categoria||"");
 setSelectValueEnsuring("f-subconcepto-select", "subconceptos", m.subconcepto||"");
 document.getElementById("f-facturaref").value = m.facturaRef||"";
+actualizarVisibilidadYoelCheckbox();
+document.getElementById("f-yoel-factura").checked = !!m.requiereFacturaYoel;
 movMeses = (m.mesesProduccion||[]).slice();
 renderMesesChips("mov-meses-chips", movMeses);
 document.getElementById("factura-match-box").style.display = "none";
@@ -2414,7 +2623,17 @@ const l = e.target.closest("label");
 if(!l) return;
 setTipoUI(tipoGroup, l.dataset.val);
 renderFacturaMatches();
+actualizarVisibilidadYoelCheckbox();
 });
+document.getElementById("f-cuenta").addEventListener("change", actualizarVisibilidadYoelCheckbox);
+function actualizarVisibilidadYoelCheckbox(){
+const tipo = tipoGroup.dataset.value || "ingreso";
+const cuenta = document.getElementById("f-cuenta").value;
+const row = document.getElementById("f-yoel-row");
+const aplica = tipo==="egreso" && CUENTAS_LUBA.indexOf(cuenta)!==-1;
+row.style.display = aplica ? "block" : "none";
+if(!aplica) document.getElementById("f-yoel-factura").checked = false;
+}
 tipoFactGroup.addEventListener("click", function(e){
 const l = e.target.closest("label");
 if(!l) return;
@@ -2423,6 +2642,116 @@ setTipoUI(tipoFactGroup, l.dataset.val);
 
 document.getElementById("btn-cargar").addEventListener("click", openLoadModal);
 document.getElementById("btn-cancel-manual").addEventListener("click", function(){ overlay.classList.remove("open"); });
+document.getElementById("btn-cancel-ajuste").addEventListener("click", function(){ overlay.classList.remove("open"); });
+document.getElementById("btn-cancel-transferencia").addEventListener("click", function(){ overlay.classList.remove("open"); });
+
+const CUENTAS_LUBA = ["Banco Macro", "Banco Galicia", "Allaria + Luba"];
+const CUENTAS_YOEL = ["Allaria + Yoel", "Mercado Pago"];
+function tipoDeMovimientoEntreCuentas(origen, destino){
+const origenEsYoel = CUENTAS_YOEL.indexOf(origen) !== -1;
+const destinoEsYoel = CUENTAS_YOEL.indexOf(destino) !== -1;
+const origenEsLuba = CUENTAS_LUBA.indexOf(origen) !== -1;
+const destinoEsLuba = CUENTAS_LUBA.indexOf(destino) !== -1;
+if(origenEsYoel && destinoEsLuba) return "aporte"; // Yoel → LUBA
+if(origenEsLuba && destinoEsYoel) return "egreso-yoel-factura"; // LUBA → Yoel
+return "transferencia"; // ambas del mismo lado (o cuenta no reconocida): interna, neutral
+}
+function actualizarAlertaLuba(){
+const origen = document.getElementById("tr-origen").value;
+const destino = document.getElementById("tr-destino").value;
+const tipo = tipoDeMovimientoEntreCuentas(origen, destino);
+const alertaEl = document.getElementById("tr-alerta-luba");
+if(tipo==="aporte"){
+alertaEl.style.display = "block";
+alertaEl.style.background = "var(--planta-soft)"; alertaEl.style.borderColor = "var(--planta-line)";
+alertaEl.innerHTML = "💰 Esto sale de una cuenta de Yoel hacia una cuenta de LUBA — se carga como <strong>Aporte de Socios</strong> (no lleva Retención de Ganancias).";
+} else if(tipo==="egreso-yoel-factura"){
+alertaEl.style.display = "block";
+alertaEl.style.background = "var(--sub-soft)"; alertaEl.style.borderColor = "var(--sub-line)";
+alertaEl.innerHTML = "⚠ Esto sale de LUBA hacia una cuenta de Yoel — es un Egreso real de LUBA, y queda marcado para recordarte que <strong>Yoel se lo tiene que facturar a LUBA</strong>.";
+} else {
+alertaEl.style.display = "none";
+}
+}
+document.getElementById("tr-origen").addEventListener("change", actualizarAlertaLuba);
+document.getElementById("tr-destino").addEventListener("change", actualizarAlertaLuba);
+
+document.getElementById("btn-guardar-transferencia").addEventListener("click", function(){
+try{
+const origen = document.getElementById("tr-origen").value;
+const destino = document.getElementById("tr-destino").value;
+const monto = Number(document.getElementById("tr-monto").value);
+const fecha = document.getElementById("tr-fecha").value;
+const nota = document.getElementById("tr-nota").value.trim();
+if(!origen || !destino || origen===destino){ toast("Elegí dos cuentas distintas."); return; }
+if(!monto || !fecha){ toast("Completá el monto (distinto de 0) y la fecha."); return; }
+const tipoMov = tipoDeMovimientoEntreCuentas(origen, destino);
+const transferenciaId = uid();
+const baseNota = nota ? (" — " + nota) : "";
+
+let categoria, destinoCampo, esAporteSocios = false, requiereFacturaYoel = false, mensajeToast;
+if(tipoMov==="aporte"){
+categoria = ensureCategoria("Aporte de Socios");
+destinoCampo = "aporte";
+esAporteSocios = true;
+mensajeToast = "Aporte de socio cargado.";
+} else if(tipoMov==="egreso-yoel-factura"){
+categoria = ensureCategoria("Pago a Yoel (a facturar)");
+destinoCampo = "sin_clasificar"; // es un egreso real, clasificalo como Planta/Sub/Retiro según corresponda
+requiereFacturaYoel = true;
+mensajeToast = "Egreso cargado — marcado para recordarte que Yoel debe facturarlo.";
+} else {
+categoria = ensureCategoria("Transferencia entre Cuentas");
+destinoCampo = "transferencia";
+mensajeToast = "Transferencia cargada.";
+}
+
+const mvOrigen = {
+id: uid(), tipo: "egreso", monto: Math.abs(monto), cuenta: origen, fecha: fecha, destino: destinoCampo,
+entidad: (tipoMov==="aporte" ? "Aporte a " : "Transferencia a ") + destino + baseNota, categoria: categoria, iva: "0", subconcepto: "",
+facturaRef: "", mesesProduccion: [], subcontratadoId: null, createdAt: Date.now(),
+transferenciaId: transferenciaId, cuentaOrigen: origen, cuentaDestino: destino,
+esAporteSocios: esAporteSocios, requiereFacturaYoel: requiereFacturaYoel
+};
+const mvDestino = {
+id: uid(), tipo: "ingreso", monto: Math.abs(monto), cuenta: destino, fecha: fecha, destino: destinoCampo,
+entidad: (tipoMov==="aporte" ? "Aporte de " : "Transferencia de ") + origen + baseNota, categoria: categoria, iva: "0", subconcepto: "",
+facturaRef: "", mesesProduccion: [], subcontratadoId: null, createdAt: Date.now(),
+transferenciaId: transferenciaId, cuentaOrigen: origen, cuentaDestino: destino,
+esAporteSocios: esAporteSocios, requiereFacturaYoel: requiereFacturaYoel
+};
+STATE.movimientos.push(mvOrigen, mvDestino);
+overlay.classList.remove("open");
+saveAndRender();
+toast(mensajeToast);
+}catch(err){
+toast("No se pudo guardar: " + err.message);
+}
+});
+
+document.getElementById("btn-guardar-ajuste").addEventListener("click", function(){
+try{
+const cuenta = document.getElementById("aj-cuenta").value;
+const montoRaw = Number(document.getElementById("aj-monto").value);
+const fecha = document.getElementById("aj-fecha").value;
+const nota = document.getElementById("aj-nota").value.trim();
+if(!cuenta || !montoRaw || !fecha){ toast("Completá cuenta, monto (distinto de 0) y fecha."); return; }
+const categoriaAjuste = ensureCategoria("Ajustes de Saldo");
+const mv = {
+id: uid(), tipo: montoRaw<0 ? "egreso" : "ingreso", monto: Math.abs(montoRaw),
+cuenta: cuenta, fecha: fecha, destino: "ajuste",
+entidad: nota ? ("Ajuste de saldo — " + nota) : "Ajuste de saldo",
+categoria: categoriaAjuste, iva: "0", subconcepto: "", facturaRef: "", mesesProduccion: [], subcontratadoId: null,
+createdAt: Date.now()
+};
+STATE.movimientos.push(mv);
+overlay.classList.remove("open");
+saveAndRender();
+toast("Ajuste de saldo cargado.");
+}catch(err){
+toast("No se pudo guardar: " + err.message);
+}
+});
 document.getElementById("btn-cancel-masiva").addEventListener("click", function(){ overlay.classList.remove("open"); });
 document.getElementById("btn-cancel-factura").addEventListener("click", function(){ overlay.classList.remove("open"); });
 
@@ -2439,6 +2768,7 @@ const categoria = resolveSimpleListSelect("f-categoria-select", "f-categoria-new
 const subconcepto = resolveSimpleListSelect("f-subconcepto-select", "f-subconcepto-new", "subconceptos");
 const facturaRef = document.getElementById("f-facturaref").value.trim();
 const mesesProduccion = movMeses.slice();
+const requiereFacturaYoel = document.getElementById("f-yoel-row").style.display !== "none" && document.getElementById("f-yoel-factura").checked;
 
 if(!entidad || !monto || !fecha || !cuenta){
 toast("Completá entidad, monto, fecha y cuenta.");
@@ -2448,7 +2778,7 @@ return;
 if(editingId){
 const m = STATE.movimientos.find(function(x){ return x.id===editingId; });
 if(m){
-Object.assign(m, {tipo:tipo, entidad:entidad, monto:monto, fecha:fecha, cuenta:cuenta, iva:iva, categoria:categoria, subconcepto:subconcepto, facturaRef:facturaRef, mesesProduccion:mesesProduccion});
+Object.assign(m, {tipo:tipo, entidad:entidad, monto:monto, fecha:fecha, cuenta:cuenta, iva:iva, categoria:categoria, subconcepto:subconcepto, facturaRef:facturaRef, mesesProduccion:mesesProduccion, requiereFacturaYoel:requiereFacturaYoel});
 }
 toast("Movimiento actualizado.");
 overlay.classList.remove("open");
@@ -2456,7 +2786,7 @@ saveAndRender();
 return;
 }
 
-const base = {tipo:tipo, entidad:entidad, fecha:fecha, cuenta:cuenta, iva:iva, categoria:categoria, subconcepto:subconcepto, facturaRef:facturaRef, mesesProduccion:mesesProduccion, createdAt: Date.now()};
+const base = {tipo:tipo, entidad:entidad, fecha:fecha, cuenta:cuenta, iva:iva, categoria:categoria, subconcepto:subconcepto, facturaRef:facturaRef, mesesProduccion:mesesProduccion, requiereFacturaYoel:requiereFacturaYoel, createdAt: Date.now()};
 const asigFinal = retiroAhorroVal || movAsignacion;
 let createdMov = null;
 
@@ -2819,7 +3149,7 @@ if(!STATE.gastosFijos.length){
 wrap.innerHTML = '<div class="empty-col">Todavía no cargaste gastos fijos.</div>';
 return;
 }
-const destinoLabel = {planta:"Planta Propia", subcontratado:"Subcontratados", ambos:"Planta + Subcontratados", retiro:"Retiro", ahorro:"Ahorro"};
+const destinoLabel = {planta:"Planta Propia", subcontratado:"Subcontratados", ambos:"Planta + Subcontratados", retiro:"Retiro", ahorro:"Ahorro", ajuste:"Ajuste de Saldo", transferencia:"Transferencia", aporte:"Aporte de Socios"};
 wrap.innerHTML = STATE.gastosFijos.map(function(gf){
 const montoLabel = gf.modoProyeccion==="porcentaje" ? (gf.porcentaje + '% de Ingresos reales') : (money(gf.monto) + '/mes');
 return '<div class="balance-chip" style="margin-bottom:8px;">' +
@@ -3035,7 +3365,8 @@ proyCatCell = '<div style="display:flex;align-items:center;gap:2px;"><span style
 proyCatCell = catProy>0?money(catProy):'—';
 }
 
-const catSaldoObj = (catRealCount>0 || catProy>0) ? formatSaldo(catProy, catReal, esGasto) : {text:'—', cls:''};
+const catSaldoObj = (catProy>0) ? formatSaldo(catProy, catReal, esGasto) : {text:'—', cls:''};
+const catPendiente = catProy>0 ? Math.max(0, catProy - catReal) : 0;
 const abierto = !!gfCategoriasAbiertas[toggleKey];
 const agregarRow = '<tr class="gf-detalle-row" data-gf-cat="' + escapeHtml(toggleKey) + '" style="display:none;background:var(--surface-soft);">' +
 '<td style="padding-left:28px;"><input type="text" class="gf-inline-input" placeholder="+ Nombre nuevo…" data-gf-nuevo-nombre="' + escapeHtml(catNombre) + '|' + toggleKeyPrefix + '"></td>' +
@@ -3053,7 +3384,7 @@ const fila = '<tr class="gf-cat-row" style="background:' + (esGasto?'var(--dange
 '<td class="mono" data-gf-toggle-cat="' + escapeHtml(toggleKey) + '" style="cursor:pointer;">' + (catRealCount>0?money(catReal):'—') + '</td>' +
 '<td class="mono ' + catSaldoObj.cls + '" data-gf-toggle-cat="' + escapeHtml(toggleKey) + '" style="cursor:pointer;">' + catSaldoObj.text + '</td>' +
 '</tr>';
-return { html: fila + detalle + agregarRow, proy: catProy, real: catReal, realCount: catRealCount };
+return { html: fila + detalle + agregarRow, proy: catProy, real: catReal, realCount: catRealCount, pendiente: catPendiente };
 }
 
 function renderSeccionPorcentaje(titulo, total, pctKey, real, mes, esGasto){
@@ -3071,7 +3402,7 @@ const html = '<tr><td colspan="4" style="background:' + bg + ';color:' + fg + ';
 '<td class="mono ' + s.cls + '">' + s.text + '</td>' +
 '</tr>' +
 '<tr style="background:' + bg + '4D;"><td style="font-weight:700;padding-left:14px;">Subtotal ' + titulo + '</td><td class="mono" style="font-weight:700;">' + (proy>0?money(proy):'—') + '</td><td class="mono" style="font-weight:700;">' + (real>0?money(real):'—') + '</td><td class="mono" style="font-weight:700;"></td></tr>';
-return { html: html, proy: proy, real: real };
+return { html: html, proy: proy, real: real, pendiente: Math.max(0, proy-real) };
 }
 
 function renderSeccion(titulo, tipo, items, mes, toggleKeyPrefix, esGasto){
@@ -3089,23 +3420,24 @@ if(STATE.categoriaSecciones[cat] === toggleKeyPrefix && !grupos.has(cat)){
 grupos.set(cat, []);
 }
 });
-let seccionProy = 0, seccionReal = 0;
+let seccionProy = 0, seccionReal = 0, seccionPendiente = 0;
 let filasCats = "";
 grupos.forEach(function(catItems, catNombre){
 const r = renderCategoriaGrupo(catNombre, catItems, mes, toggleKeyPrefix, esGasto);
-seccionProy += r.proy; seccionReal += r.real;
+seccionProy += r.proy; seccionReal += r.real; seccionPendiente += r.pendiente;
 filasCats += r.html;
 });
 if(!items.length && grupos.size===0){
 filasCats = '<tr><td colspan="4" style="color:var(--muted);font-style:italic;padding:8px 14px;">Todavía no hay nada acá.</td></tr>';
 }
 const subtotalBg = tipo==="ingreso" ? "#EFF9F3" : (tipo==="neutral" ? "#F0F2F7" : "#FDF1EF");
-const sSaldo = formatSaldo(seccionProy, seccionReal, esGasto);
+const seccionSaldoTexto = esGasto ? ('-'+money(seccionPendiente)) : money(seccionPendiente);
+const seccionSaldoCls = esGasto ? 'neg' : 'pos';
 const html = '<tr><td colspan="4" style="background:' + bg + ';color:' + fg + ';font-weight:700;font-family:var(--font-display);letter-spacing:.3px;padding:9px 14px;border-left:4px solid ' + bd + ';">' + titulo + '</td></tr>' +
 filasCats +
-(items.length ? ('<tr style="background:' + subtotalBg + ';border-top:1px solid ' + bd + ';border-bottom:1px solid ' + bd + ';"><td style="font-weight:700;padding-left:14px;">Subtotal ' + titulo + '</td><td class="mono" style="font-weight:700;">' + (seccionProy>0?money(seccionProy):'—') + '</td><td class="mono" style="font-weight:700;">' + (seccionReal>0?money(seccionReal):'—') + '</td><td class="mono ' + sSaldo.cls + '" style="font-weight:700;">' + ((seccionProy>0)?sSaldo.text:'—') + '</td></tr>') : '') +
+(items.length ? ('<tr style="background:' + subtotalBg + ';border-top:1px solid ' + bd + ';border-bottom:1px solid ' + bd + ';"><td style="font-weight:700;padding-left:14px;">Subtotal ' + titulo + '</td><td class="mono" style="font-weight:700;">' + (seccionProy>0?money(seccionProy):'—') + '</td><td class="mono" style="font-weight:700;">' + (seccionReal>0?money(seccionReal):'—') + '</td><td class="mono ' + seccionSaldoCls + '" style="font-weight:700;">' + (seccionPendiente>0?seccionSaldoTexto:'—') + '</td></tr>') : '') +
 '<tr><td style="padding-left:14px;"><input type="text" class="gf-inline-input" placeholder="+ Nueva categoría…" data-gf-nueva-categoria="' + toggleKeyPrefix + '"></td><td colspan="3" style="color:var(--muted);font-size:11px;">Enter para crearla (después le agregás conceptos adentro)</td></tr>';
-return { html: html, proy: seccionProy, real: seccionReal };
+return { html: html, proy: seccionProy, real: seccionReal, pendiente: seccionPendiente };
 }
 
 
@@ -3115,6 +3447,85 @@ if(!(catNombre in STATE.categoriaProyeccion)) return 0;
 const ov = STATE.categoriaProyeccionOverrides[catNombre] && STATE.categoriaProyeccionOverrides[catNombre][mes];
 if(ov !== undefined && ov !== null) return Number(ov)||0;
 return Number(STATE.categoriaProyeccion[catNombre].monto)||0;
+}
+
+// Real de los paneles con % (Cobros/Gastos Atrasados): solo lo que se resolvió específicamente
+// desde el panel "Otras Deudas" ese mes — NO cualquier movimiento que tenga esa categoría suelta.
+function realOtrasDeudasResueltasEnMes(tipo, mes){
+return STATE.otrasDeudas.filter(function(d){ return d.tipo===tipo && d.estado==="cobrada" && d.movimientoId; })
+.filter(function(d){
+const mv = STATE.movimientos.find(function(m){ return m.id===d.movimientoId; });
+return mv && (mv.fecha||"").slice(0,7)===mes;
+}).reduce(function(a,d){ return a+(Number(d.monto)||0); }, 0);
+}
+
+// Fuente única para "cuánto falta pagar": compara Proyectado vs Real, categoría por categoría literal
+// (no por concepto/entidad), y solo para categorías que tienen algo proyectado. Usada tanto por el
+// KPI de Cash Flow como por el termómetro, para que nunca puedan desincronizarse entre sí.
+function computeGastosPorCategoria(mesActual, excluirDividendos){
+const proyPorCategoria = {};
+STATE.gastosFijos.filter(function(gf){ return gf.tipo !== "ingreso"; }).forEach(function(gf){
+const proy = gfMontoEfectivo(gf, mesActual);
+if(proy === null) return;
+const cat = gf.categoria || "(Sin categoría)";
+proyPorCategoria[cat] = (proyPorCategoria[cat]||0) + proy;
+});
+Object.keys(STATE.categoriaProyeccion).forEach(function(cat){
+const info = STATE.categoriaProyeccion[cat];
+if(info.tipo === "ingreso") return;
+proyPorCategoria[cat] = (proyPorCategoria[cat]||0) + categoriaProyEfectivoParaMes(cat, mesActual);
+});
+const porCategoria = {};
+let totalProy = 0, totalPagado = 0, totalFalta = 0, dividendosPendientes = 0;
+Object.keys(proyPorCategoria).forEach(function(cat){
+const proy = proyPorCategoria[cat];
+const real = STATE.movimientos.filter(function(m){ return (m.categoria||"")===cat && m.tipo==="egreso" && (m.fecha||"").slice(0,7)===mesActual; }).reduce(function(a,m){ return a+(Number(m.monto)||0); },0);
+const pendiente = Math.max(0, proy - real);
+const esDividendos = cat.trim().toLowerCase() === "dividendos";
+if(esDividendos) dividendosPendientes += pendiente;
+if(esDividendos && excluirDividendos) return;
+const pagado = Math.min(real, proy);
+porCategoria[cat] = { proy: proy, real: real, pagado: pagado, falta: pendiente };
+totalProy += proy; totalPagado += pagado; totalFalta += pendiente;
+});
+
+// ---- Paneles con % (Gastos Atrasados / Deudas FC Atrasadas): misma fuente que usa la grilla de Cash Flow ----
+const pctGastos = STATE.porcentajesPendientes.otrosGastos !== undefined ? STATE.porcentajesPendientes.otrosGastos : 100;
+const totalOtrosGastosPend = STATE.otrasDeudas.filter(function(d){ return d.tipo==="pago" && d.estado!=="cobrada"; }).reduce(function(a,d){ return a+(Number(d.monto)||0); },0);
+const proyGastosAtrasados = round2(totalOtrosGastosPend * pctGastos / 100);
+const realGastosAtrasados = realOtrasDeudasResueltasEnMes("pago", mesActual);
+if(proyGastosAtrasados>0){
+const pendiente = Math.max(0, proyGastosAtrasados - realGastosAtrasados);
+const pagado = Math.min(realGastosAtrasados, proyGastosAtrasados);
+porCategoria["Gastos Atrasados (%)"] = { proy: proyGastosAtrasados, real: realGastosAtrasados, pagado: pagado, falta: pendiente };
+totalProy += proyGastosAtrasados; totalPagado += pagado; totalFalta += pendiente;
+}
+
+const pctFacturasPagar = STATE.porcentajesPendientes.facturasPagar !== undefined ? STATE.porcentajesPendientes.facturasPagar : 100;
+const totalFacturasPagarVencidas = STATE.facturas.filter(function(f){ return f.tipo==="recibida" && f.estado==="vencida" && (f.fechaEmision||"").slice(0,7)!==mesActual; }).reduce(function(a,f){ return a+(Number(f.monto)||0); },0);
+const proyDeudasAtrasadas = round2(totalFacturasPagarVencidas * pctFacturasPagar / 100);
+const realDeudasAtrasadas = STATE.facturas.filter(function(f){
+if(f.tipo!=="recibida" || f.estado!=="cobrada" || f.estadoAnterior!=="vencida" || !f.movimientoId) return false;
+const mv = STATE.movimientos.find(function(m){ return m.id===f.movimientoId; });
+return mv && (mv.fecha||"").slice(0,7)===mesActual;
+}).reduce(function(a,f){ return a+(Number(f.monto)||0); },0);
+if(proyDeudasAtrasadas>0){
+const pendiente = Math.max(0, proyDeudasAtrasadas - realDeudasAtrasadas);
+const pagado = Math.min(realDeudasAtrasadas, proyDeudasAtrasadas);
+porCategoria["Deudas FC Atrasadas (%)"] = { proy: proyDeudasAtrasadas, real: realDeudasAtrasadas, pagado: pagado, falta: pendiente };
+totalProy += proyDeudasAtrasadas; totalPagado += pagado; totalFalta += pendiente;
+}
+
+// ---- Solo para visualización: gastos reales de categorías SIN nada proyectado (no cuentan en Falta/Pagado) ----
+const otrosPagadosSinProyectar = STATE.movimientos.filter(function(m){
+if(m.tipo!=="egreso") return false;
+if((m.fecha||"").slice(0,7)!==mesActual) return false;
+if(m.destino==="ajuste" || m.destino==="transferencia") return false;
+if(!m.categoria) return false;
+return !(m.categoria in proyPorCategoria);
+}).reduce(function(a,m){ return a+(Number(m.monto)||0); }, 0);
+
+return { porCategoria: porCategoria, totalProy: totalProy, totalPagado: totalPagado, totalFalta: totalFalta, dividendosPendientes: dividendosPendientes, otrosPagadosSinProyectar: otrosPagadosSinProyectar };
 }
 
 function renderKpiCashflow(){
@@ -3131,12 +3542,21 @@ const v = categoriaProyEfectivoParaMes(cat, mes);
 if(STATE.categoriaProyeccion[cat].tipo === "ingreso") proyIngresosCat += v; else proyGastosCat += v;
 });
 
+// Paneles con % (Cobros Atrasados / Cobranzas FC Atrasadas, del lado Ingresos)
+const pctOtrosCobros = STATE.porcentajesPendientes.otrosCobros !== undefined ? STATE.porcentajesPendientes.otrosCobros : 100;
+const totalOtrosCobrosPendKpi = STATE.otrasDeudas.filter(function(d){ return d.tipo==="cobro" && d.estado!=="cobrada"; }).reduce(function(a,d){ return a+(Number(d.monto)||0); },0);
+proyIngresosCat += round2(totalOtrosCobrosPendKpi * pctOtrosCobros / 100);
+const pctFacturasCobrar = STATE.porcentajesPendientes.facturasCobrar !== undefined ? STATE.porcentajesPendientes.facturasCobrar : 100;
+const totalFacturasVencidasKpi = STATE.facturas.filter(function(f){ return f.tipo==="emitida" && f.estado==="vencida" && (f.fechaEmision||"").slice(0,7)!==mes; }).reduce(function(a,f){ return a+(Number(f.monto)||0); },0);
+proyIngresosCat += round2(totalFacturasVencidasKpi * pctFacturasCobrar / 100);
+
 const proyIngresos = STATE.gastosFijos.filter(function(gf){ return gf.tipo==="ingreso"; }).reduce(function(a,gf){ const v=gfMontoEfectivo(gf,mes); return a+(v||0); },0) + proyIngresosCat;
-const proyGastos = STATE.gastosFijos.filter(function(gf){ return gf.tipo!=="ingreso"; }).reduce(function(a,gf){ const v=gfMontoEfectivo(gf,mes); return a+(v||0); },0) + proyGastosCat;
+const gastosPorCat = computeGastosPorCategoria(mes, false);
+const proyGastos = gastosPorCat.totalProy;
 const proyDisponible = proyIngresos - proyGastos;
 
 const faltaCobrar = Math.max(0, proyIngresos - ingresosReal);
-const faltaPagar = Math.max(0, proyGastos - gastosReal);
+const faltaPagar = gastosPorCat.totalFalta;
 
 function splitBlock(labelReal, valReal, claseReal, labelProy, valProy, leyenda, hayDatoProy){
 const claseProy = hayDatoProy ? (valProy>=0?'pos':'neg') : '';
@@ -3203,8 +3623,8 @@ const seccIngPlanta = renderSeccion("INGRESOS · Planta Propia", "ingreso", ingP
 const seccIngSub = renderSeccion("INGRESOS · Subcontratados", "ingreso", ingSubItems, mes, "ING-SUB", false);
 
 const totalOtrosCobrosPend = STATE.otrasDeudas.filter(function(d){ return d.tipo==="cobro" && d.estado!=="cobrada"; }).reduce(function(a,d){ return a+(Number(d.monto)||0); },0);
-const realOtrosCobros = STATE.movimientos.filter(function(m){ return m.tipo==="ingreso" && (m.categoria||"").trim().toLowerCase()==="otros cobros" && (m.fecha||"").slice(0,7)===mes; }).reduce(function(a,m){ return a+(Number(m.monto)||0); },0);
-const seccOtrosIngresos = renderSeccionPorcentaje("OTROS INGRESOS", totalOtrosCobrosPend, "otrosCobros", realOtrosCobros, mes, false);
+const realOtrosCobros = realOtrasDeudasResueltasEnMes("cobro", mes);
+const seccOtrosIngresos = renderSeccionPorcentaje("COBROS ATRASADOS", totalOtrosCobrosPend, "otrosCobros", realOtrosCobros, mes, false);
 
 const totalFacturasVencidas = STATE.facturas.filter(function(f){ return f.tipo==="emitida" && f.estado==="vencida" && (f.fechaEmision||"").slice(0,7)!==mes; }).reduce(function(a,f){ return a+(Number(f.monto)||0); },0);
 const realFacturasAtrasadas = STATE.facturas.filter(function(f){
@@ -3220,8 +3640,8 @@ const seccComunes = renderSeccion("GASTOS COMUNES / TRANSVERSALES", "egreso", gC
 const seccAhorro = renderSeccion("AHORRO / PROVISIONES · no cuenta como gasto ni ingreso", "neutral", ahorroItems, mes, "AHORRO", false);
 
 const totalOtrosGastosPend = STATE.otrasDeudas.filter(function(d){ return d.tipo==="pago" && d.estado!=="cobrada"; }).reduce(function(a,d){ return a+(Number(d.monto)||0); },0);
-const realOtrosGastos = STATE.movimientos.filter(function(m){ return m.tipo==="egreso" && (m.categoria||"").trim().toLowerCase()==="otros gastos" && (m.fecha||"").slice(0,7)===mes; }).reduce(function(a,m){ return a+(Number(m.monto)||0); },0);
-const seccOtrosGastos = renderSeccionPorcentaje("OTROS GASTOS", totalOtrosGastosPend, "otrosGastos", realOtrosGastos, mes, true);
+const realOtrosGastos = realOtrasDeudasResueltasEnMes("pago", mes);
+const seccOtrosGastos = renderSeccionPorcentaje("GASTOS ATRASADOS", totalOtrosGastosPend, "otrosGastos", realOtrosGastos, mes, true);
 
 const totalFacturasPagarVencidas = STATE.facturas.filter(function(f){ return f.tipo==="recibida" && f.estado==="vencida" && (f.fechaEmision||"").slice(0,7)!==mes; }).reduce(function(a,f){ return a+(Number(f.monto)||0); },0);
 const realFacturasPagarAtrasadas = STATE.facturas.filter(function(f){
@@ -3233,16 +3653,18 @@ const seccPagosAtrasados = renderSeccionPorcentaje("DEUDAS FC ATRASADAS (por pag
 
 const totalIngresosProy = seccIngPlanta.proy + seccIngSub.proy + seccOtrosIngresos.proy + seccCobranzasAtrasadas.proy;
 const totalIngresosReal = seccIngPlanta.real + seccIngSub.real + seccOtrosIngresos.real + seccCobranzasAtrasadas.real;
+const totalIngresosPendiente = seccIngPlanta.pendiente + seccIngSub.pendiente + seccOtrosIngresos.pendiente + seccCobranzasAtrasadas.pendiente;
 const totalIngresos = totalIngresosReal;
 
 const totalGastosProy = seccFijos.proy + seccVariables.proy + seccComunes.proy + seccOtrosGastos.proy + seccPagosAtrasados.proy;
 const totalGastosReal = seccFijos.real + seccVariables.real + seccComunes.real + seccOtrosGastos.real + seccPagosAtrasados.real;
+const totalGastosPendiente = seccFijos.pendiente + seccVariables.pendiente + seccComunes.pendiente + seccOtrosGastos.pendiente + seccPagosAtrasados.pendiente;
 
 const resultadoGeneral = totalIngresos - totalGastosReal;
 const resultadoProyectado = totalIngresosProy - totalGastosProy;
 
-const sIng = formatSaldo(totalIngresosProy, totalIngresosReal, false);
-const sGas = formatSaldo(totalGastosProy, totalGastosReal, true);
+const sIngTexto = money(totalIngresosPendiente);
+const sGasTexto = '-'+money(totalGastosPendiente);
 
 const headHtml = '<tr><th>Categoría / Concepto</th><th class="mono">Proyectado</th><th class="mono">Real</th><th class="mono">Saldo</th></tr>';
 document.getElementById("gf-grid-head-ing").innerHTML = headHtml;
@@ -3252,10 +3674,10 @@ const bodyIng = document.getElementById("gf-grid-body-ing");
 const bodyEgr = document.getElementById("gf-grid-body-egr");
 
 bodyIng.innerHTML = seccIngPlanta.html + seccIngSub.html + seccOtrosIngresos.html + seccCobranzasAtrasadas.html +
-'<tr style="background:var(--brand-soft);"><td style="font-weight:700;padding-left:14px;">TOTAL INGRESOS</td><td class="mono" style="font-weight:700;">' + (totalIngresosProy>0?money(totalIngresosProy):'—') + '</td><td class="mono" style="font-weight:700;">' + money(totalIngresosReal) + '</td><td class="mono ' + sIng.cls + '" style="font-weight:700;">' + (totalIngresosProy>0?sIng.text:'—') + '</td></tr>';
+'<tr style="background:var(--brand-soft);"><td style="font-weight:700;padding-left:14px;">TOTAL INGRESOS</td><td class="mono" style="font-weight:700;">' + (totalIngresosProy>0?money(totalIngresosProy):'—') + '</td><td class="mono" style="font-weight:700;">' + money(totalIngresosReal) + '</td><td class="mono pos" style="font-weight:700;">' + (totalIngresosPendiente>0?sIngTexto:'—') + '</td></tr>';
 
 bodyEgr.innerHTML = seccFijos.html + seccVariables.html + seccComunes.html + seccOtrosGastos.html + seccPagosAtrasados.html +
-'<tr style="background:var(--danger-soft);"><td style="font-weight:700;padding-left:14px;">TOTAL GASTOS</td><td class="mono" style="font-weight:700;">' + (totalGastosProy>0?money(totalGastosProy):'—') + '</td><td class="mono" style="font-weight:700;">' + money(totalGastosReal) + '</td><td class="mono ' + sGas.cls + '" style="font-weight:700;">' + (totalGastosProy>0?sGas.text:'—') + '</td></tr>' +
+'<tr style="background:var(--danger-soft);"><td style="font-weight:700;padding-left:14px;">TOTAL GASTOS</td><td class="mono" style="font-weight:700;">' + (totalGastosProy>0?money(totalGastosProy):'—') + '</td><td class="mono" style="font-weight:700;">' + money(totalGastosReal) + '</td><td class="mono neg" style="font-weight:700;">' + (totalGastosPendiente>0?sGasTexto:'—') + '</td></tr>' +
 seccAhorro.html;
 
 const proyDisponibleEl = document.getElementById("gf-resultado-proyectado");
@@ -3274,8 +3696,8 @@ resumenEl.innerHTML =
 '<div class="resumen-final">' +
 '<div class="resumen-final-head">Resumen del mes — ' + MESES_ABREV[Number(mes.slice(5,7))-1] + " " + mes.slice(0,4) + '</div>' +
 '<table>' +
-'<tr><td class="rf-label">Ingresos</td><td class="mono">Proyectado: ' + (totalIngresosProy>0?money(totalIngresosProy):'—') + '</td><td class="mono">Real: <strong>' + money(totalIngresosReal) + '</strong></td><td class="mono ' + sIng.cls + '">Falta cobrar: ' + (totalIngresosProy>0?sIng.text:'—') + '</td></tr>' +
-'<tr><td class="rf-label">Egresos</td><td class="mono">Proyectado: ' + (totalGastosProy>0?money(totalGastosProy):'—') + '</td><td class="mono">Real: <strong>' + money(totalGastosReal) + '</strong></td><td class="mono ' + sGas.cls + '">Falta pagar: ' + (totalGastosProy>0?sGas.text:'—') + '</td></tr>' +
+'<tr><td class="rf-label">Ingresos</td><td class="mono">Proyectado: ' + (totalIngresosProy>0?money(totalIngresosProy):'—') + '</td><td class="mono">Real: <strong>' + money(totalIngresosReal) + '</strong></td><td class="mono pos">Falta cobrar: ' + (totalIngresosPendiente>0?sIngTexto:'—') + '</td></tr>' +
+'<tr><td class="rf-label">Egresos</td><td class="mono">Proyectado: ' + (totalGastosProy>0?money(totalGastosProy):'—') + '</td><td class="mono">Real: <strong>' + money(totalGastosReal) + '</strong></td><td class="mono neg">Falta pagar: ' + (totalGastosPendiente>0?sGasTexto:'—') + '</td></tr>' +
 '<tr class="rf-total"><td>Resultado Real (Ingresos − Egresos)</td><td class="mono" colspan="2"></td><td class="mono ' + (resultadoGeneral>=0?'pos':'neg') + '">' + money(resultadoGeneral) + '</td></tr>' +
 '<tr class="rf-total" style="background:#EEF2FE;"><td>Resultado Proyectado (Hipotético)</td><td class="mono" colspan="2"></td><td class="mono ' + (resultadoProyectado>=0?'pos':'neg') + '">' + ((totalIngresosProy>0||totalGastosProy>0)?money(resultadoProyectado):'—') + '</td></tr>' +
 '</table>' +
@@ -3290,20 +3712,59 @@ document.querySelectorAll('[data-gf-cat="' + CSS.escape(key) + '"]').forEach(fun
 const movsDelMes = STATE.movimientos.filter(function(m){ return (m.fecha||"").slice(0,7)===mes; });
 const conCategoria = movsDelMes.filter(function(m){ return m.categoria; });
 const sinCategoria = movsDelMes.filter(function(m){ return !m.categoria; });
+
+function destinoTieneBalde(tipo, destino){
+if(destino==="ahorro" || destino==="ajuste" || destino==="transferencia" || destino==="aporte") return true;
+if(tipo==="ingreso") return destino==="planta" || destino==="subcontratado";
+return destino==="planta" || destino==="subcontratado" || destino==="ambos" || destino==="retiro" || !destino;
+}
+const noReflejados = conCategoria.filter(function(m){ return !destinoTieneBalde(m.tipo, m.destino); });
 const totalConCategoria = conCategoria.reduce(function(acc,m){ return acc+(Number(m.monto)||0); },0);
 const totalSinCategoria = sinCategoria.reduce(function(acc,m){ return acc+(Number(m.monto)||0); },0);
+const totalNoReflejados = noReflejados.reduce(function(acc,m){ return acc+(Number(m.monto)||0); },0);
 const concEl = document.getElementById("gf-conciliacion");
-if(sinCategoria.length){
+
+function filaAccion(m){
+const esIng = m.tipo==="ingreso";
+const motivo = m.destino==="sin_clasificar" ? "sin clasificar" : ('Ingreso con destino "' + (m.destino||'—') + '", sin balde en Cash Flow');
+const botones = esIng
+? '<button data-conc-clasif="' + m.id + '|planta" style="font-size:11px;padding:3px 8px;border-radius:6px;border:1px solid var(--planta-line);background:var(--planta-soft);color:var(--planta);cursor:pointer;">⚡ Planta</button>' +
+'<button data-conc-clasif="' + m.id + '|subcontratado" style="font-size:11px;padding:3px 8px;border-radius:6px;border:1px solid var(--sub-line);background:var(--sub-soft);color:var(--sub);cursor:pointer;">⚡ Subcontr.</button>' +
+'<button data-conc-clasif="' + m.id + '|ahorro" style="font-size:11px;padding:3px 8px;border-radius:6px;border:1px solid var(--border-strong);background:var(--surface-2);color:var(--text-soft);cursor:pointer;">🐷 Ahorro</button>'
+: '<button data-conc-clasif="' + m.id + '|planta" style="font-size:11px;padding:3px 8px;border-radius:6px;border:1px solid var(--planta-line);background:var(--planta-soft);color:var(--planta);cursor:pointer;">⚡ Planta</button>' +
+'<button data-conc-clasif="' + m.id + '|subcontratado" style="font-size:11px;padding:3px 8px;border-radius:6px;border:1px solid var(--sub-line);background:var(--sub-soft);color:var(--sub);cursor:pointer;">⚡ Subcontr.</button>' +
+'<button data-conc-clasif="' + m.id + '|ambos" style="font-size:11px;padding:3px 8px;border-radius:6px;border:1px solid var(--brand-line);background:var(--brand-soft);color:var(--brand);cursor:pointer;">🤝 Ambos</button>' +
+'<button data-conc-clasif="' + m.id + '|retiro" style="font-size:11px;padding:3px 8px;border-radius:6px;border:1px solid var(--border-strong);background:var(--surface-2);color:var(--text-soft);cursor:pointer;">🎩 Retiro</button>';
+return '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0;border-top:1px solid rgba(0,0,0,.06);flex-wrap:wrap;">' +
+'<span style="font-size:12px;">' + (esIng?'↑ ':'↓ ') + escapeHtml(m.entidad||'(sin entidad)') + (m.categoria?(' · '+escapeHtml(m.categoria)):'') + ' · ' + money(m.monto) + ' <span style="color:var(--muted);">(' + motivo + ')</span></span>' +
+'<span style="display:flex;gap:4px;flex-wrap:wrap;">' + botones + '</span></div>';
+}
+
+if(sinCategoria.length || noReflejados.length){
 concEl.style.background = "var(--sub-soft)";
 concEl.style.border = "1px solid var(--sub-line)";
-concEl.innerHTML = '⚠ <strong>' + sinCategoria.length + ' movimiento(s) de este mes sin Categoría</strong> (' + money(totalSinCategoria) + ') no aparecen en esta grilla — cargales una Categoría en Clasificación para que se vean acá.' +
-'<div style="margin-top:4px;color:var(--muted);">Con categoría y reflejados acá: ' + conCategoria.length + ' mov. por ' + money(totalConCategoria) + '.</div>';
+let html = "";
+if(sinCategoria.length){
+html += '⚠ <strong>' + sinCategoria.length + ' movimiento(s) sin Categoría</strong> (' + money(totalSinCategoria) + ') — cargales una Categoría en Clasificación.';
+}
+if(noReflejados.length){
+html += (sinCategoria.length?'<br>':'') + '⚠ <strong>' + noReflejados.length + ' movimiento(s) con Categoría que no se ven en esta grilla</strong> (' + money(totalNoReflejados) + ') — clasificalos acá mismo:' +
+noReflejados.map(filaAccion).join("");
+}
+html += '<div style="margin-top:6px;color:var(--muted);font-size:12px;">Con categoría y reflejados en la grilla: ' + (conCategoria.length-noReflejados.length) + ' mov. por ' + money(totalConCategoria-totalNoReflejados) + '.</div>';
+concEl.innerHTML = html;
 } else {
 concEl.style.background = "var(--planta-soft)";
 concEl.style.border = "1px solid var(--planta-line)";
-concEl.innerHTML = '✓ Todos los movimientos de este mes (' + conCategoria.length + ', por ' + money(totalConCategoria) + ') tienen Categoría y están reflejados en esta grilla.';
+concEl.innerHTML = '✓ Todos los movimientos de este mes (' + conCategoria.length + ', por ' + money(totalConCategoria) + ') tienen Categoría, están clasificados, y se ven reflejados en esta grilla.';
 }
 }
+document.getElementById("gf-conciliacion").addEventListener("click", function(e){
+const btn = e.target.closest("[data-conc-clasif]");
+if(!btn) return;
+const [id, destino] = btn.dataset.concClasif.split("|");
+setDestino(id, destino);
+});
 let gfAddRapidoContexto = null;
 document.getElementById("gf-grid-wrap").addEventListener("click", async function(e){
 const editItem = e.target.closest("[data-gf-edit]");
@@ -3512,7 +3973,10 @@ return '<tr>' +
 '<td class="mono">' + money(f.monto) + '</td>' +
 '<td>' + estadoCell + '</td>' +
 '<td class="mono">' + ((f.estado==='pendiente' || f.estado==='vencida') ? daysSince(f.fechaEmision) : '—') + '</td>' +
-'<td class="row-acts"><button class="icon-btn" data-fact-edit="' + f.id + '" title="Editar">' + ICONS.edit + '</button> <button class="icon-btn danger" data-fact-del="' + f.id + '" title="Borrar">' + ICONS.trash + '</button></td>' +
+'<td class="row-acts">' +
+'<button class="icon-btn" data-fact-edit="' + f.id + '" title="Editar">' + ICONS.edit + '</button> ' +
+((f.estado==='cobrada' && f.movimientoId) ? ('<button class="icon-btn" data-fact-retenciones="' + f.id + '" title="Ver / editar gastos y retenciones">💲</button> ') : '') +
+'<button class="icon-btn danger" data-fact-del="' + f.id + '" title="Borrar">' + ICONS.trash + '</button></td>' +
 '</tr>';
 }).join("");
 }
@@ -3550,6 +4014,34 @@ toast("No se pudo agregar: " + err.message);
 }
 });
 
+function renderFacturarLubaEn(panelId, bodyId){
+const panel = document.getElementById(panelId);
+const body = document.getElementById(bodyId);
+if(!panel || !body) return;
+const pendientes = STATE.movimientos.filter(function(m){ return m.requiereFacturaYoel && !m.facturadoYoel && m.tipo==="egreso"; })
+.sort(function(a,b){ return (b.fecha||"").localeCompare(a.fecha||""); });
+if(!pendientes.length){ panel.style.display = "none"; return; }
+panel.style.display = "block";
+body.innerHTML = pendientes.map(function(m){
+return '<tr>' +
+'<td>' + fmtDate(m.fecha) + '</td>' +
+'<td>' + escapeHtml(m.cuentaOrigen||'') + ' → ' + escapeHtml(m.cuentaDestino||'') + '</td>' +
+'<td class="mono">' + money(m.monto) + '</td>' +
+'<td><button class="btn btn-cancel" style="padding:5px 12px;font-size:12px;" data-marcar-facturado-luba="' + m.id + '">✓ Ya facturado</button></td>' +
+'</tr>';
+}).join("");
+}
+function renderFacturarLuba(){
+renderFacturarLubaEn("panel-facturar-luba", "facturar-luba-body");
+renderFacturarLubaEn("panel-facturar-luba-mayores", "facturar-luba-mayores-body");
+}
+document.body.addEventListener("click", function(e){
+const btn = e.target.closest("[data-marcar-facturado-luba]");
+if(!btn) return;
+const m = STATE.movimientos.find(function(x){ return x.id===btn.dataset.marcarFacturadoLuba; });
+if(m){ m.facturadoYoel = true; saveAndRender(); toast("Marcado como ya facturado por Yoel."); }
+});
+
 function renderOtrasDeudasTables(){
 const cobrar = STATE.otrasDeudas.filter(function(d){ return d.tipo==="cobro"; });
 const pagar = STATE.otrasDeudas.filter(function(d){ return d.tipo==="pago"; });
@@ -3563,7 +4055,9 @@ return '<tr>' +
 '<td>' + escapeHtml(d.entidad) + (d.categoria?(' <span style="color:var(--muted);font-size:10.5px;">· '+escapeHtml(d.categoria)+'</span>'):'') + '</td>' +
 '<td class="mono">' + money(d.monto) + '</td>' +
 '<td>' + estadoCell + '</td>' +
-'<td class="row-acts"><button class="icon-btn danger" data-od-del="' + d.id + '" title="Borrar">' + ICONS.trash + '</button></td>' +
+'<td class="row-acts">' +
+((d.estado==='cobrada' && d.movimientoId) ? ('<button class="icon-btn" data-od-retenciones="' + d.id + '" title="Ver / editar gastos y retenciones">💲</button> ') : '') +
+'<button class="icon-btn danger" data-od-del="' + d.id + '" title="Borrar">' + ICONS.trash + '</button></td>' +
 '</tr>';
 }).join("");
 }
@@ -3582,6 +4076,8 @@ document.getElementById("od-subtotal-pagar").textContent = subPagar>0 ? ("Pendie
 document.getElementById("view-facturas").addEventListener("click", async function(e){
 const cobrarBtn = e.target.closest("[data-od-cobrar]");
 if(cobrarBtn){ openCobroModal(cobrarBtn.dataset.odCobrar, "otradeuda"); return; }
+const retBtnOd = e.target.closest("[data-od-retenciones]");
+if(retBtnOd){ openRetencionesModal(retBtnOd.dataset.odRetenciones, "otradeuda"); return; }
 const delBtn = e.target.closest("[data-od-del]");
 if(delBtn){
 const deuda = STATE.otrasDeudas.find(function(d){ return d.id===delBtn.dataset.odDel; });
@@ -3601,7 +4097,7 @@ toast(tieneMovimiento ? "Borrado, incluyendo el movimiento vinculado." : "Borrad
 }
 });
 
-let mayorModo = "entidad";
+let mayorModo = "categoria";
 let mayorSelected = null;
 let mayoresFiltro = "";
 
@@ -3609,7 +4105,7 @@ function getEntidadesResumen(){
 const map = new Map();
 function ensure(nombre){
 const key = nombre.trim().toLowerCase();
-if(!map.has(key)) map.set(key, {nombre: nombre.trim(), ingreso:0, egreso:0, movCount:0, factCount:0});
+if(!map.has(key)) map.set(key, {nombre: nombre.trim(), ingreso:0, egreso:0, movCount:0, factCount:0, deudaCount:0});
 return map.get(key);
 }
 STATE.movimientos.forEach(function(m){
@@ -3623,6 +4119,11 @@ if(!f.entidad) return;
 const e = ensure(f.entidad);
 e.factCount++;
 });
+STATE.otrasDeudas.forEach(function(d){
+if(!d.entidad) return;
+const e = ensure(d.entidad);
+e.deudaCount++;
+});
 return Array.from(map.values()).sort(function(a,b){ return a.nombre.localeCompare(b.nombre); });
 }
 
@@ -3634,20 +4135,41 @@ return {nombre: c, ingreso: n.ingreso, egreso: n.egreso, movCount: movs.length, 
 });
 }
 
+function getCategoriasResumen(){
+const map = new Map();
+STATE.movimientos.forEach(function(m){
+const cat = m.categoria || "(Sin categoría)";
+if(!map.has(cat)) map.set(cat, {nombre: cat, ingreso:0, egreso:0, movCount:0, factCount:0});
+const e = map.get(cat);
+if(m.tipo==="ingreso") e.ingreso += Number(m.monto)||0; else e.egreso += Number(m.monto)||0;
+e.movCount++;
+});
+return Array.from(map.values()).sort(function(a,b){ return a.nombre.localeCompare(b.nombre); });
+}
+
 document.getElementById("mayores-modo-tabs").addEventListener("click", function(e){
 const t = e.target.closest(".modal-tab");
 if(!t) return;
 mayorModo = t.dataset.modo;
 document.querySelectorAll("#mayores-modo-tabs .modal-tab").forEach(function(b){ b.classList.toggle("active", b===t); });
-document.getElementById("mayores-list-title").textContent = mayorModo==="entidad" ? "Entidades" : "Cuentas";
-document.getElementById("mayores-buscar").placeholder = mayorModo==="entidad" ? "Buscar entidad…" : "Buscar cuenta…";
+const titulos = {cuenta:"Cuentas", categoria:"Categorías"};
+const placeholders = {cuenta:"Buscar cuenta…", categoria:"Buscar categoría…"};
+if(mayorModo==="historico"){
+document.getElementById("mayores-layout-normal").style.display = "none";
+document.getElementById("mayores-historico-panel").style.display = "block";
+} else {
+document.getElementById("mayores-layout-normal").style.display = "flex";
+document.getElementById("mayores-historico-panel").style.display = "none";
+document.getElementById("mayores-list-title").textContent = titulos[mayorModo];
+document.getElementById("mayores-buscar").placeholder = placeholders[mayorModo];
+}
 mayorSelected = null;
 renderMayores();
 });
 
 function renderMayoresList(){
 const list = document.getElementById("mayores-list");
-let items = mayorModo==="entidad" ? getEntidadesResumen() : getCuentasResumen();
+let items = mayorModo==="cuenta" ? getCuentasResumen() : getCategoriasResumen();
 if(mayoresFiltro.trim()){
 const f = mayoresFiltro.trim().toLowerCase();
 items = items.filter(function(e){ return e.nombre.toLowerCase().indexOf(f)!==-1; });
@@ -3660,7 +4182,7 @@ list.innerHTML = items.map(function(e){
 const neto = e.ingreso - e.egreso;
 const key = e.nombre.trim().toLowerCase();
 const activeClass = (mayorSelected === key) ? " active" : "";
-const subLabel = mayorModo==="entidad" ? (e.movCount + ' mov. · ' + e.factCount + ' fact.') : (e.movCount + ' mov.');
+const subLabel = e.movCount + ' mov.';
 return '<div class="mayor-item' + activeClass + '" data-key="' + escapeHtml(key) + '">' +
 '<div><div class="nom">' + escapeHtml(e.nombre) + '</div><div class="sub">' + subLabel + '</div></div>' +
 '<div class="net ' + (neto>=0?'pos':'neg') + '">' + money(neto) + '</div>' +
@@ -3679,82 +4201,279 @@ body.innerHTML = "";
 return;
 }
 
-let movs, facts, nombreReal;
-if(mayorModo==="entidad"){
-movs = STATE.movimientos.filter(function(m){ return (m.entidad||"").trim().toLowerCase() === mayorSelected; });
-facts = STATE.facturas.filter(function(f){ return (f.entidad||"").trim().toLowerCase() === mayorSelected; });
-nombreReal = (movs[0] && movs[0].entidad) || (facts[0] && facts[0].entidad) || mayorSelected;
-} else {
+let movs, facts, deudas, nombreReal;
+if(mayorModo==="cuenta"){
 movs = STATE.movimientos.filter(function(m){ return (m.cuenta||"").trim().toLowerCase() === mayorSelected; });
 facts = [];
+deudas = [];
 nombreReal = (movs[0] && movs[0].cuenta) || STATE.cuentas.find(function(c){ return c.trim().toLowerCase()===mayorSelected; }) || mayorSelected;
+} else {
+movs = STATE.movimientos.filter(function(m){ return (m.categoria||"(sin categoría)").trim().toLowerCase() === mayorSelected; });
+facts = [];
+deudas = [];
+nombreReal = (movs[0] && movs[0].categoria) || STATE.categorias.find(function(c){ return c.trim().toLowerCase()===mayorSelected; }) || mayorSelected;
 }
 title.textContent = nombreReal;
 
-const n = netOf(movs);
+const movsAjuste = movs.filter(function(m){ return m.destino==="ajuste" || m.destino==="transferencia"; });
+const movsOperativos = movs.filter(function(m){ return m.destino!=="ajuste" && m.destino!=="transferencia"; });
+const netoAjustes = movsAjuste.reduce(function(acc,m){ return acc + (m.tipo==="ingreso"?1:-1)*(Number(m.monto)||0); }, 0);
+
+const n = netOf(movsOperativos);
+const ivaDebitoM = movsOperativos.filter(function(m){ return m.tipo==="ingreso"; }).reduce(function(acc,m){ return acc+ivaEfectivo(m); },0);
+const ivaCreditoM = movsOperativos.filter(function(m){ return m.tipo==="egreso"; }).reduce(function(acc,m){ return acc+ivaEfectivo(m); },0);
+const posicionIvaM = ivaDebitoM - ivaCreditoM;
+const impEfectivoTotal = movsOperativos.reduce(function(acc,m){ return acc+impDebCredEfectivo(m); },0);
+const ganEfectivoTotal = movsOperativos.reduce(function(acc,m){ return acc+gananciasEfectivo(m); },0);
+const iibbTotal = movsOperativos.reduce(function(acc,m){ return acc+iibbEfectivo(m); },0);
 const facturasPendientes = facts.filter(function(f){ return f.estado!=="cobrada"; })
 .reduce(function(acc,f){ return acc + (Number(f.monto)||0); }, 0);
+const deudasPendientes = deudas.filter(function(d){ return d.estado!=="cobrada"; })
+.reduce(function(acc,d){ return acc + (Number(d.monto)||0); }, 0);
+const movsAporte = movs.filter(function(m){ return m.destino==="aporte"; });
+const totalAportes = movsAporte.filter(function(m){ return m.tipo==="ingreso"; }).reduce(function(a,m){ return a+(Number(m.monto)||0); },0);
 resumen.innerHTML =
 '<div class="mayor-resumen-row">' +
 '<div class="mayor-resumen-chip"><div class="lbl">Ingresos</div><div class="val pos">' + money(n.ingreso) + '</div></div>' +
 '<div class="mayor-resumen-chip"><div class="lbl">Egresos</div><div class="val neg">' + money(n.egreso) + '</div></div>' +
-'<div class="mayor-resumen-chip"><div class="lbl">Imp. Déb/Créd (0,6%)</div><div class="val neg">-' + money(n.impuesto) + '</div></div>' +
-'<div class="mayor-resumen-chip"><div class="lbl">Ret. Ganancias (0,8%)</div><div class="val neg">-' + money(n.retencionGanancias) + '</div></div>' +
+(movsAjuste.length ? ('<div class="mayor-resumen-chip"><div class="lbl">Ajustes de Saldo</div><div class="val" style="color:#4B5871;">' + (netoAjustes>=0?'+':'') + money(netoAjustes) + '</div></div>') : '') +
+(movsAporte.length ? ('<div class="mayor-resumen-chip"><div class="lbl">de eso, Aportes de Socios</div><div class="val" style="color:var(--brand);">' + money(totalAportes) + '</div></div>') : '') +
+'<div class="mayor-resumen-chip"><div class="lbl">Imp. Déb/Créd (0,6%)</div><div class="val neg">-' + money(impEfectivoTotal) + '</div></div>' +
+'<div class="mayor-resumen-chip"><div class="lbl">Ret. Ganancias (0,8%)</div><div class="val neg">-' + money(ganEfectivoTotal) + '</div></div>' +
+'<div class="mayor-resumen-chip"><div class="lbl">IIBB</div><div class="val neg">' + (iibbTotal>0?('-'+money(iibbTotal)):'—') + '</div></div>' +
+'<div class="mayor-resumen-chip"><div class="lbl">IVA Débito</div><div class="val pos">' + money(ivaDebitoM) + '</div></div>' +
+'<div class="mayor-resumen-chip"><div class="lbl">IVA Crédito</div><div class="val neg">' + money(ivaCreditoM) + '</div></div>' +
+'<div class="mayor-resumen-chip"><div class="lbl">Posición IVA</div><div class="val ' + (posicionIvaM>=0?'neg':'pos') + '">' + money(posicionIvaM) + '</div></div>' +
 '<div class="mayor-resumen-chip"><div class="lbl">Neto</div><div class="val ' + (n.neto>=0?'pos':'neg') + '">' + money(n.neto) + '</div></div>' +
-(mayorModo==="entidad" ? '<div class="mayor-resumen-chip"><div class="lbl">Facturas pendientes</div><div class="val">' + money(facturasPendientes) + '</div></div>' : '') +
 '</div>';
 
-const eventos = [];
+const facturaPorMovId = {};
+STATE.facturas.forEach(function(f){ if(f.movimientoId) facturaPorMovId[f.movimientoId] = f; });
+
+function muestraBadgeFacturado(ev){
+// true = la fila muestra literalmente "✓ N° ..."
+if(ev.tipo!=="movimiento") return false;
+const m = ev.data;
+if(m.tipo!=="ingreso") return false;
+return !!(facturaPorMovId[m.id] || m.facturaRef);
+}
+function muestraSinFactura(ev){
+// true = la fila muestra literalmente "Sin factura"
+if(ev.tipo!=="movimiento") return false;
+const m = ev.data;
+if(m.tipo!=="ingreso") return false;
+return !(facturaPorMovId[m.id] || m.facturaRef);
+}
+
+let eventos = [];
 movs.forEach(function(m){
 eventos.push({fecha: m.fecha, tipo: "movimiento", data: m});
 });
 facts.forEach(function(f){
 eventos.push({fecha: f.fechaEmision, tipo: "factura", data: f});
 });
+deudas.forEach(function(d){
+eventos.push({fecha: d.fecha, tipo: "deuda", data: d});
+});
 eventos.sort(function(a,b){ return (b.fecha||"").localeCompare(a.fecha||""); });
 
+const filtroTexto = (document.getElementById("mayor-detalle-buscar").value||"").trim().toLowerCase();
+const filtroFacturado = document.getElementById("mayor-detalle-facturado-filtro").value;
+if(filtroTexto){
+eventos = eventos.filter(function(ev){
+const d = ev.data;
+const campos = [d.entidad, d.categoria, d.subconcepto, d.numeroFactura, d.cuenta].filter(Boolean).join(" ").toLowerCase();
+return campos.indexOf(filtroTexto) !== -1;
+});
+}
+if(filtroFacturado==="si") eventos = eventos.filter(muestraBadgeFacturado);
+if(filtroFacturado==="no") eventos = eventos.filter(muestraSinFactura);
+
 if(!eventos.length){
-body.innerHTML = '<div class="empty-col">Sin movimientos' + (mayorModo==="entidad"?' ni facturas':'') + ' para mostrar.</div>';
+body.innerHTML = '<div class="empty-col">Nada para mostrar con estos filtros.</div>';
 return;
 }
 
-const destinoLabel = {planta:"Planta Propia", subcontratado:"Subcontratados", retiro:"Retiro", ahorro:"Ahorro", sin_clasificar:"Sin clasificar"};
-const colEntidadCuenta = mayorModo==="entidad" ? "Cuenta" : "Entidad";
-body.innerHTML = '<table><thead><tr><th>Fecha</th><th>Tipo</th><th>' + colEntidadCuenta + '</th><th>Detalle</th><th class="mono">Monto</th><th class="mono">Imp. 0,6%</th><th class="mono">Ganancias</th><th>Estado / Destino</th></tr></thead><tbody>' +
+const destinoLabel = {planta:"Planta Propia", subcontratado:"Subcontratados", ambos:"Ambos (Planta+Sub)", retiro:"Retiro", ahorro:"Ahorro", sin_clasificar:"Sin clasificar", ajuste:"Ajuste de Saldo", transferencia:"Transferencia", aporte:"Aporte de Socios"};
+const colEntidadCuenta = "Entidad";
+body.innerHTML = '<table><thead><tr><th>Fecha</th><th>Tipo</th><th>' + colEntidadCuenta + '</th><th>Detalle</th><th class="mono">Monto</th><th class="mono">IVA</th><th class="mono">Imp. 0,6%</th><th class="mono">Ganancias</th><th class="mono">IIBB</th><th>Facturado</th><th>Estado / Destino</th></tr></thead><tbody>' +
 eventos.map(function(ev){
 if(ev.tipo==="movimiento"){
 const m = ev.data;
-const impM = impuestoDebCredFor(m);
-const ganM = retencionGananciasFor(m);
+const impM = impDebCredEfectivo(m);
+const ganM = gananciasEfectivo(m);
+const ivaM = ivaEfectivo(m);
+const iibbM = iibbEfectivo(m);
+const factVinculada = facturaPorMovId[m.id];
+let facturadoCell = '<span style="color:var(--muted);">—</span>';
+if(m.tipo==="ingreso"){
+const numeros = [];
+if(factVinculada) numeros.push(factVinculada.numeroFactura);
+if(m.facturaRef && (!factVinculada || factVinculada.numeroFactura!==m.facturaRef)) numeros.push(m.facturaRef);
+facturadoCell = numeros.length
+? ('<span class="badge badge-cob" title="' + escapeHtml(factVinculada?(factVinculada.entidad||''):'') + '">✓ N° ' + numeros.map(escapeHtml).join(" / ") + '</span>')
+: '<span style="color:var(--muted);font-size:11.5px;">Sin factura</span>';
+}
 return '<tr>' +
 '<td>' + fmtDate(m.fecha) + '</td>' +
 '<td>Movimiento</td>' +
-'<td>' + escapeHtml(mayorModo==="entidad" ? (m.cuenta||"—") : (m.entidad||"—")) + '</td>' +
+'<td>' + escapeHtml(m.entidad||"—") + '</td>' +
 '<td>' + (m.subconcepto?escapeHtml(m.subconcepto):'') + (m.categoria?(' · '+escapeHtml(m.categoria)):'') + '</td>' +
 '<td class="mono ' + (m.tipo==='ingreso'?'pos':'neg') + '">' + (m.tipo==='ingreso'?'+':'−') + money(m.monto) + '</td>' +
+'<td class="mono ' + (ivaM>0?(m.tipo==='ingreso'?'pos':'neg'):'') + '" style="' + (ivaM===0?'color:var(--muted);':'') + '">' + (ivaM>0?money(ivaM):'—') + '</td>' +
 '<td class="mono ' + (impM>0?'neg':'') + '" style="' + (impM===0?'color:var(--muted);':'') + '">' + (impM>0?('-'+money(impM)):'—') + '</td>' +
 '<td class="mono ' + (ganM>0?'neg':'') + '" style="' + (ganM===0?'color:var(--muted);':'') + '">' + (ganM>0?('-'+money(ganM)):'—') + '</td>' +
-'<td>' + (destinoLabel[m.destino]||m.destino) + '</td>' +
+'<td class="mono ' + (iibbM>0?'neg':'') + '" style="' + (iibbM===0?'color:var(--muted);':'') + '">' + (iibbM>0?('-'+money(iibbM)):'—') + '</td>' +
+'<td>' + facturadoCell + '</td>' +
+'<td>' + ((m.destino==="transferencia"||m.destino==="aporte"||m.requiereFacturaYoel) && m.cuentaOrigen ? ('↔ ' + escapeHtml(m.cuentaOrigen||'') + ' → ' + escapeHtml(m.cuentaDestino||'') + (m.requiereFacturaYoel?' <span class="badge badge-pend">Yoel debe facturar</span>':'') + (m.esAporteSocios?' <span class="badge" style="background:var(--brand-soft);color:var(--brand);">Aporte</span>':'')) : (destinoLabel[m.destino]||m.destino)) + '</td>' +
 '</tr>';
-} else {
+} else if(ev.tipo==="factura"){
 const f = ev.data;
 const badgeClass = f.estado==='cobrada' ? 'badge-cob' : (f.estado==='vencida' ? 'badge-venc' : 'badge-pend');
 const badgeText = f.estado==='cobrada' ? (f.tipo==='emitida'?'Cobrada':'Pagada') : (f.estado==='vencida'?'Vencida':'Pendiente');
+const ivaF = ivaAmount(f.monto, f.iva);
 return '<tr>' +
 '<td>' + fmtDate(f.fechaEmision) + '</td>' +
 '<td>Factura</td>' +
 '<td>—</td>' +
 '<td>N° ' + escapeHtml(f.numeroFactura) + ' (' + (f.tipo==='emitida'?'emitida':'recibida') + ')</td>' +
 '<td class="mono">' + money(f.monto) + '</td>' +
+'<td class="mono" style="' + (ivaF===0?'color:var(--muted);':'') + '">' + (ivaF>0?money(ivaF):'—') + '</td>' +
 '<td class="mono" style="color:var(--muted);">—</td>' +
 '<td class="mono" style="color:var(--muted);">—</td>' +
+'<td class="mono" style="color:var(--muted);">—</td>' +
+'<td style="color:var(--muted);font-size:11.5px;">(es la factura)</td>' +
+'<td><span class="badge ' + badgeClass + '">' + badgeText + '</span></td>' +
+'</tr>';
+} else {
+const d = ev.data;
+const badgeClass = d.estado==='cobrada' ? 'badge-cob' : 'badge-pend';
+const badgeText = d.estado==='cobrada' ? (d.tipo==='cobro'?'Cobrado':'Pagado') : 'Pendiente';
+return '<tr>' +
+'<td>' + fmtDate(d.fecha) + '</td>' +
+'<td>Otra deuda</td>' +
+'<td>—</td>' +
+'<td>' + (d.categoria?escapeHtml(d.categoria):'(sin categoría)') + ' (' + (d.tipo==='cobro'?'a cobrar':'a pagar') + ')</td>' +
+'<td class="mono">' + money(d.monto) + '</td>' +
+'<td class="mono" style="color:var(--muted);">—</td>' +
+'<td class="mono" style="color:var(--muted);">—</td>' +
+'<td class="mono" style="color:var(--muted);">—</td>' +
+'<td class="mono" style="color:var(--muted);">—</td>' +
+'<td style="color:var(--muted);font-size:11.5px;">—</td>' +
 '<td><span class="badge ' + badgeClass + '">' + badgeText + '</span></td>' +
 '</tr>';
 }
 }).join("") + '</tbody></table>';
 }
 
+let historicoMesesAbiertos = {};
+function renderMayoresHistorico(){
+const cont = document.getElementById("mayores-historico-body");
+if(!STATE.movimientos.length){
+cont.innerHTML = '<div class="empty-col">Todavía no hay movimientos cargados.</div>';
+return;
+}
+const facturaPorMovIdHist = {};
+STATE.facturas.forEach(function(f){ if(f.movimientoId) facturaPorMovIdHist[f.movimientoId] = f; });
+const porMes = new Map();
+STATE.movimientos.forEach(function(m){
+const mes = (m.fecha||"").slice(0,7) || "(sin fecha)";
+if(!porMes.has(mes)) porMes.set(mes, []);
+porMes.get(mes).push(m);
+});
+const mesesOrdenados = Array.from(porMes.keys()).sort().reverse();
+if(Object.keys(historicoMesesAbiertos).length===0 && mesesOrdenados.length){
+historicoMesesAbiertos[mesesOrdenados[0]] = true;
+}
+
+const destinoLabel = {planta:"Planta Propia", subcontratado:"Subcontratados", ambos:"Ambos", retiro:"Retiro", ahorro:"Ahorro", sin_clasificar:"Sin clasificar", ajuste:"Ajuste", transferencia:"Transferencia", aporte:"Aporte de Socios"};
+
+let html = "";
+mesesOrdenados.forEach(function(mes){
+const movs = porMes.get(mes).slice().sort(function(a,b){ return (b.fecha||"").localeCompare(a.fecha||""); });
+const n = netOf(movs.filter(function(m){ return m.destino!=="ajuste"; }));
+const sinClasificar = movs.filter(function(m){ return !m.categoria || m.destino==="sin_clasificar"; });
+const abierto = !!historicoMesesAbiertos[mes];
+let mesLabel = mes;
+if(/^\d{4}-\d{2}$/.test(mes)){
+const [y,mm] = mes.split("-");
+mesLabel = MESES_ES[Number(mm)-1] + " " + y;
+}
+html += '<div class="hist-mes-header" data-hist-toggle-mes="' + mes + '" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:var(--surface-2);border-radius:10px;margin-bottom:' + (abierto?'0':'8px') + ';">' +
+'<div><span style="display:inline-block;width:16px;">' + (abierto?'▾':'▸') + '</span><strong style="font-family:var(--font-display);">' + mesLabel + '</strong> <span style="color:var(--muted);font-size:12.5px;">(' + movs.length + ' mov.)</span>' +
+(sinClasificar.length ? (' <span class="badge badge-pend" style="margin-left:6px;">' + sinClasificar.length + ' sin clasificar</span>') : '') + '</div>' +
+'<div style="display:flex;gap:14px;font-size:12.5px;">' +
+'<span>Ingresos: <strong class="mono pos">' + money(n.ingreso) + '</strong></span>' +
+'<span>Egresos: <strong class="mono neg">' + money(n.egreso) + '</strong></span>' +
+'<span>Neto: <strong class="mono ' + (n.neto>=0?'pos':'neg') + '">' + money(n.neto) + '</strong></span>' +
+'</div></div>';
+if(abierto){
+html += '<div style="margin-bottom:16px;overflow-x:auto;"><table><thead><tr><th>Fecha</th><th>Tipo</th><th>Entidad</th><th>Categoría</th><th>Cuenta</th><th class="mono">Monto</th><th>Facturado</th><th>Destino</th><th></th></tr></thead><tbody>';
+movs.forEach(function(m){
+const sinCat = !m.categoria;
+const sinDestino = m.destino==="sin_clasificar";
+const catCell = sinCat ? '<span class="badge badge-pend">Sin categoría</span>' : escapeHtml(m.categoria);
+const destinoCell = sinDestino
+? '<span style="display:flex;gap:3px;flex-wrap:wrap;">' +
+'<button data-hist-clasif="' + m.id + '|planta" style="font-size:10.5px;padding:2px 6px;border-radius:5px;border:1px solid var(--planta-line);background:var(--planta-soft);color:var(--planta);cursor:pointer;">Planta</button>' +
+'<button data-hist-clasif="' + m.id + '|subcontratado" style="font-size:10.5px;padding:2px 6px;border-radius:5px;border:1px solid var(--sub-line);background:var(--sub-soft);color:var(--sub);cursor:pointer;">Sub</button>' +
+'<button data-hist-clasif="' + m.id + '|ambos" style="font-size:10.5px;padding:2px 6px;border-radius:5px;border:1px solid var(--brand-line);background:var(--brand-soft);color:var(--brand);cursor:pointer;">Ambos</button>' +
+'<button data-hist-clasif="' + m.id + '|retiro" style="font-size:10.5px;padding:2px 6px;border-radius:5px;border:1px solid var(--border-strong);background:var(--surface-2);color:var(--text-soft);cursor:pointer;">Retiro</button>' +
+'</span>'
+: ((m.destino==="transferencia"||m.destino==="aporte"||m.requiereFacturaYoel) && m.cuentaOrigen ? ('↔ ' + escapeHtml(m.cuentaOrigen||'') + ' → ' + escapeHtml(m.cuentaDestino||'') + (m.requiereFacturaYoel?' <span class="badge badge-pend">Yoel debe facturar</span>':'') + (m.esAporteSocios?' <span class="badge" style="background:var(--brand-soft);color:var(--brand);">Aporte</span>':'')) : (destinoLabel[m.destino]||m.destino));
+const factVinculadaHist = facturaPorMovIdHist[m.id];
+let facturadoCellHist = '<span style="color:var(--muted);">—</span>';
+if(m.tipo==="ingreso"){
+const numerosHist = [];
+if(factVinculadaHist) numerosHist.push(factVinculadaHist.numeroFactura);
+if(m.facturaRef && (!factVinculadaHist || factVinculadaHist.numeroFactura!==m.facturaRef)) numerosHist.push(m.facturaRef);
+facturadoCellHist = numerosHist.length
+? ('<span class="badge badge-cob">✓ N° ' + numerosHist.map(escapeHtml).join(" / ") + '</span>')
+: '<span style="color:var(--muted);font-size:11px;">Sin factura</span>';
+}
+html += '<tr' + ((sinCat||sinDestino) ? ' style="background:var(--sub-soft);"' : '') + '>' +
+'<td>' + fmtDate(m.fecha) + '</td>' +
+'<td>' + (m.tipo==='ingreso'?'<span class="pos">↑ Ingreso</span>':'<span class="neg">↓ Egreso</span>') + '</td>' +
+'<td>' + escapeHtml(m.entidad||"—") + '</td>' +
+'<td>' + catCell + '</td>' +
+'<td>' + escapeHtml(m.cuenta||"—") + '</td>' +
+'<td class="mono">' + money(m.monto) + '</td>' +
+'<td>' + facturadoCellHist + '</td>' +
+'<td>' + destinoCell + '</td>' +
+'<td class="row-acts"><button class="icon-btn" data-hist-editar="' + m.id + '" title="Editar">' + ICONS.edit + '</button> <button class="icon-btn danger" data-hist-borrar="' + m.id + '" title="Borrar">' + ICONS.trash + '</button></td>' +
+'</tr>';
+});
+html += '</tbody></table></div>';
+}
+});
+cont.innerHTML = html;
+}
+
+document.getElementById("mayores-historico-body").addEventListener("click", async function(e){
+const toggleMes = e.target.closest("[data-hist-toggle-mes]");
+if(toggleMes){
+const mes = toggleMes.dataset.histToggleMes;
+historicoMesesAbiertos[mes] = !historicoMesesAbiertos[mes];
+renderMayoresHistorico();
+return;
+}
+const clasif = e.target.closest("[data-hist-clasif]");
+if(clasif){
+const [id, destino] = clasif.dataset.histClasif.split("|");
+setDestino(id, destino);
+return;
+}
+const editar = e.target.closest("[data-hist-editar]");
+if(editar){ openEditModal(editar.dataset.histEditar); return; }
+const borrar = e.target.closest("[data-hist-borrar]");
+if(borrar){ await borrarMovimiento(borrar.dataset.histBorrar); return; }
+});
+
 function renderMayores(){
+if(mayorModo==="historico"){
+renderMayoresHistorico();
+return;
+}
 renderMayoresList();
 renderMayorDetalle();
 }
@@ -3768,6 +4487,12 @@ renderMayores();
 document.getElementById("mayores-buscar").addEventListener("input", function(e){
 mayoresFiltro = e.target.value;
 renderMayoresList();
+});
+document.getElementById("mayor-detalle-buscar").addEventListener("input", function(){
+renderMayorDetalle();
+});
+document.getElementById("mayor-detalle-facturado-filtro").addEventListener("change", function(){
+renderMayorDetalle();
 });
 
 document.getElementById("view-facturas").addEventListener("change", function(e){
@@ -3823,6 +4548,49 @@ if(cobroAsignacion==="subcontratado" || cobroAsignacion==="split") fillCobroSubc
 });
 
 let pendingCobroSource = "factura";
+let pendingRetencionesMovId = null;
+function openRetencionesModal(id, source){
+let mv = null, nombreRef = "", montoRef = 0;
+if((source||"factura") === "factura"){
+const f = STATE.facturas.find(function(x){ return x.id===id; });
+if(!f || !f.movimientoId){ toast("Esta factura todavía no tiene un movimiento vinculado."); return; }
+mv = STATE.movimientos.find(function(m){ return m.id===f.movimientoId; });
+nombreRef = "Factura N° " + f.numeroFactura + " — " + (f.entidad||"");
+} else {
+const d = STATE.otrasDeudas.find(function(x){ return x.id===id; });
+if(!d || !d.movimientoId){ toast("Esto todavía no tiene un movimiento vinculado."); return; }
+mv = STATE.movimientos.find(function(m){ return m.id===d.movimientoId; });
+nombreRef = (d.entidad||"") + (d.categoria?(" — "+d.categoria):"");
+}
+if(!mv){ toast("No se encontró el movimiento vinculado (puede haberse borrado)."); return; }
+pendingRetencionesMovId = mv.id;
+document.getElementById("retenciones-modal-sub").textContent = nombreRef;
+document.getElementById("retenciones-monto-actual").textContent = money(mv.monto);
+document.getElementById("edret-iva").value = round2(ivaEfectivo(mv));
+document.getElementById("edret-ganancias").value = round2(gananciasEfectivo(mv));
+document.getElementById("edret-iibb").value = round2(iibbEfectivo(mv));
+document.getElementById("edret-otros").value = tieneRetencionGuardada(mv,"otros") ? mv.retenciones.otros : "";
+document.getElementById("edret-impdebcred").value = round2(impDebCredEfectivo(mv));
+document.getElementById("modal-retenciones-overlay").classList.add("open");
+}
+document.getElementById("btn-cancel-retenciones").addEventListener("click", function(){
+document.getElementById("modal-retenciones-overlay").classList.remove("open");
+});
+document.getElementById("btn-guardar-retenciones").addEventListener("click", function(){
+const mv = STATE.movimientos.find(function(m){ return m.id===pendingRetencionesMovId; });
+if(!mv) return;
+mv.retenciones = {
+iva: Number(document.getElementById("edret-iva").value)||0,
+ganancias: Number(document.getElementById("edret-ganancias").value)||0,
+iibb: Number(document.getElementById("edret-iibb").value)||0,
+otros: Number(document.getElementById("edret-otros").value)||0,
+impDebCred: Number(document.getElementById("edret-impdebcred").value)||0
+};
+document.getElementById("modal-retenciones-overlay").classList.remove("open");
+saveAndRender();
+toast("Gastos y retenciones actualizados.");
+});
+
 function openCobroModal(id, source){
 pendingCobroFacturaId = id;
 pendingCobroSource = source || "factura";
@@ -3835,13 +4603,53 @@ document.getElementById("cobro-split-row").style.display = "none";
 document.getElementById("cobro-sub-row").style.display = "none";
 document.getElementById("cobro-split-planta").value = 50;
 document.getElementById("cobro-split-sub").value = 50;
+
+let montoBase = 0, ivaRateBase = "0", esIngresoBase = false;
+if(pendingCobroSource === "otradeuda"){
+const d = STATE.otrasDeudas.find(function(x){ return x.id===id; });
+if(d){ montoBase = d.monto; esIngresoBase = d.tipo==="cobro"; }
+} else {
+const f = STATE.facturas.find(function(x){ return x.id===id; });
+if(f){ montoBase = f.monto; ivaRateBase = f.iva||"0"; esIngresoBase = f.tipo==="emitida"; }
+}
+document.getElementById("ret-iva").value = round2(ivaAmount(montoBase, ivaRateBase)) || "";
+document.getElementById("ret-ganancias").value = esIngresoBase ? round2(montoBase*0.008) : "";
+document.getElementById("ret-iibb").value = "";
+document.getElementById("ret-otros").value = "";
+document.getElementById("ret-impdebcred").value = round2(montoBase*0.006) || "";
+document.getElementById("cobro-retenciones-body").style.display = "none";
+document.getElementById("toggle-cobro-retenciones").textContent = "▸ Retenciones";
+
 cobroOverlay.classList.add("open");
+}
+document.getElementById("toggle-cobro-retenciones").addEventListener("click", function(e){
+e.preventDefault();
+const body = document.getElementById("cobro-retenciones-body");
+const abierto = body.style.display !== "none";
+body.style.display = abierto ? "none" : "block";
+this.textContent = abierto ? "▸ Retenciones" : "▾ Retenciones";
+});
+function leerRetencionesForm(){
+return {
+iva: Number(document.getElementById("ret-iva").value)||0,
+ganancias: Number(document.getElementById("ret-ganancias").value)||0,
+iibb: Number(document.getElementById("ret-iibb").value)||0,
+otros: Number(document.getElementById("ret-otros").value)||0,
+impDebCred: Number(document.getElementById("ret-impdebcred").value)||0
+};
+}
+function escalarRetenciones(ret, ratio){
+return {
+iva: round2(ret.iva*ratio), ganancias: round2(ret.ganancias*ratio), iibb: round2(ret.iibb*ratio),
+otros: round2(ret.otros*ratio), impDebCred: round2(ret.impDebCred*ratio)
+};
 }
 document.getElementById("btn-cancel-cobro").addEventListener("click", function(){
 cobroOverlay.classList.remove("open");
 renderFacturasTables();
 });
 document.getElementById("btn-confirm-cobro").addEventListener("click", function(){
+const retenciones = leerRetencionesForm();
 if(pendingCobroSource === "otradeuda"){
 const d = STATE.otrasDeudas.find(function(x){ return x.id===pendingCobroFacturaId; });
 if(!d) return;
@@ -3859,15 +4667,15 @@ const pSub = Number(document.getElementById("cobro-split-sub").value)||0;
 if(pPlanta + pSub !== 100){ toast("El reparto tiene que sumar 100%."); return; }
 let subId = null;
 if(pSub > 0){ subId = resolveCobroSubcontratado(); if(!subId){ toast("Elegí o cargá un subcontratado para la parte repartida."); return; } }
-if(pPlanta > 0){ const mv = Object.assign({}, base, {id: uid(), monto: round2(d.monto*pPlanta/100), destino:"planta", subcontratadoId:null}); STATE.movimientos.push(mv); firstMovId = firstMovId || mv.id; }
-if(pSub > 0){ const mv = Object.assign({}, base, {id: uid(), monto: round2(d.monto*pSub/100), destino:"subcontratado", subcontratadoId:subId}); STATE.movimientos.push(mv); firstMovId = firstMovId || mv.id; }
+if(pPlanta > 0){ const mv = Object.assign({}, base, {id: uid(), monto: round2(d.monto*pPlanta/100), destino:"planta", subcontratadoId:null, retenciones: escalarRetenciones(retenciones, pPlanta/100)}); STATE.movimientos.push(mv); firstMovId = firstMovId || mv.id; }
+if(pSub > 0){ const mv = Object.assign({}, base, {id: uid(), monto: round2(d.monto*pSub/100), destino:"subcontratado", subcontratadoId:subId, retenciones: escalarRetenciones(retenciones, pSub/100)}); STATE.movimientos.push(mv); firstMovId = firstMovId || mv.id; }
 } else if(cobroAsignacion === "subcontratado"){
 const subId = resolveCobroSubcontratado();
 if(!subId){ toast("Elegí o cargá un subcontratado."); return; }
-const mv = Object.assign({}, base, {id: uid(), monto: d.monto, destino:"subcontratado", subcontratadoId:subId});
+const mv = Object.assign({}, base, {id: uid(), monto: d.monto, destino:"subcontratado", subcontratadoId:subId, retenciones: retenciones});
 STATE.movimientos.push(mv); firstMovId = mv.id;
 } else {
-const mv = Object.assign({}, base, {id: uid(), monto: d.monto, destino: cobroAsignacion, subcontratadoId:null});
+const mv = Object.assign({}, base, {id: uid(), monto: d.monto, destino: cobroAsignacion, subcontratadoId:null, retenciones: retenciones});
 STATE.movimientos.push(mv); firstMovId = mv.id;
 }
 d.estadoAnterior = d.estado;
@@ -3899,20 +4707,20 @@ subId = resolveCobroSubcontratado();
 if(!subId){ toast("Elegí o cargá un subcontratado para la parte repartida."); return; }
 }
 if(pPlanta > 0){
-const mv = Object.assign({}, base, {id: uid(), monto: round2(f.monto*pPlanta/100), destino:"planta", subcontratadoId:null});
+const mv = Object.assign({}, base, {id: uid(), monto: round2(f.monto*pPlanta/100), destino:"planta", subcontratadoId:null, retenciones: escalarRetenciones(retenciones, pPlanta/100)});
 STATE.movimientos.push(mv); firstMovId = firstMovId || mv.id;
 }
 if(pSub > 0){
-const mv = Object.assign({}, base, {id: uid(), monto: round2(f.monto*pSub/100), destino:"subcontratado", subcontratadoId:subId});
+const mv = Object.assign({}, base, {id: uid(), monto: round2(f.monto*pSub/100), destino:"subcontratado", subcontratadoId:subId, retenciones: escalarRetenciones(retenciones, pSub/100)});
 STATE.movimientos.push(mv); firstMovId = firstMovId || mv.id;
 }
 } else if(cobroAsignacion === "subcontratado"){
 const subId = resolveCobroSubcontratado();
 if(!subId){ toast("Elegí o cargá un subcontratado."); return; }
-const mv = Object.assign({}, base, {id: uid(), monto: f.monto, destino:"subcontratado", subcontratadoId:subId});
+const mv = Object.assign({}, base, {id: uid(), monto: f.monto, destino:"subcontratado", subcontratadoId:subId, retenciones: retenciones});
 STATE.movimientos.push(mv); firstMovId = mv.id;
 } else {
-const mv = Object.assign({}, base, {id: uid(), monto: f.monto, destino: cobroAsignacion, subcontratadoId:null});
+const mv = Object.assign({}, base, {id: uid(), monto: f.monto, destino: cobroAsignacion, subcontratadoId:null, retenciones: retenciones});
 STATE.movimientos.push(mv); firstMovId = mv.id;
 }
 
@@ -3926,6 +4734,8 @@ toast("Cobro registrado y clasificado.");
 document.getElementById("view-facturas").addEventListener("click", async function(e){
 const edit = e.target.closest("[data-fact-edit]");
 if(edit){ openFacturaEditModal(edit.dataset.factEdit); return; }
+const retBtn = e.target.closest("[data-fact-retenciones]");
+if(retBtn){ openRetencionesModal(retBtn.dataset.factRetenciones); return; }
 const del = e.target.closest("[data-fact-del]");
 if(del){
 const factura = STATE.facturas.find(function(f){ return f.id===del.dataset.factDel; });
@@ -3954,6 +4764,7 @@ fillGfCategoriaSelect();
 renderGfLista();
 renderGfGrid();
 renderFacturasTables();
+renderFacturarLuba();
 fillOdCategoriaSelect();
 renderOtrasDeudasTables();
 renderKPIsFacturas();
