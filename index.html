@@ -469,7 +469,7 @@ main.content{padding:22px 18px 50px;}
 <button id="btn-toggle-theme" style="width:100%;margin-top:8px;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--surface-2);color:var(--text);font-size:12.5px;cursor:pointer;">🌙 Modo oscuro</button>
 <div class="sidebar-foot" id="storage-status">Guardando localmente…</div>
 <div id="supabase-diag" style="display:none;padding:8px 10px;border-radius:8px;margin-top:8px;font-family:monospace;font-size:10.5px;font-weight:600;line-height:1.4;"></div>
-<div class="sidebar-foot" style="margin-top:4px;opacity:.6;">Versión: 2026-08-13.116 (agenda de vencimientos)</div>
+<div class="sidebar-foot" style="margin-top:4px;opacity:.6;">Versión: 2026-08-13.161 (check En Cash por movimiento en Mayor)</div>
 <div class="sidebar-foot" style="margin-top:6px;"><a href="#" id="btn-debug" style="color:#2F6FED;text-decoration:underline;">Ver datos guardados (debug)</a></div>
 <div class="sidebar-foot" style="margin-top:6px;display:flex;gap:10px;">
 <a href="#" id="btn-exportar-archivo" style="color:#2F6FED;text-decoration:underline;">Exportar</a>
@@ -556,6 +556,7 @@ Excluir Dividendos (se pagan al final)
 <div class="col-band-icon"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg></div>
 <div class="col-band-title">Subcontratados →</div>
 <div class="col-band-count" id="count-sub">0</div>
+<button type="button" class="icon-btn" id="btn-gestionar-subc" title="Gestionar subcontratados (fecha de inicio, cerrar)" style="font-size:11px;width:auto;padding:2px 8px;margin-right:4px;">⚙ Gestionar</button>
 <button type="button" class="icon-btn col-min-btn" id="btn-min-sub" title="Minimizar / expandir">▾</button>
 </div>
 <div class="col-resumen-mini" id="col-resumen-sub" style="display:none;"></div>
@@ -640,6 +641,11 @@ Excluir Dividendos (se pagan al final)
 </table>
 </div>
 
+<div class="panel" id="panel-mov-sin-factura">
+<h3>Movimientos sin factura <span style="color:var(--muted);font-weight:400;font-size:12.5px;">— la misma info que en Mayores, agrupada acá para no tener que ir a buscarla</span></h3>
+<div id="mov-sin-factura-secciones"></div>
+</div>
+
 <div class="panel">
 <h3>Otros Cobros y Gastos <span style="color:var(--muted);font-weight:400;font-size:12.5px;">— deudas sin comprobante formal (préstamos, saldos viejos, etc.)</span></h3>
 <div class="form-grid" style="grid-template-columns:1fr 1.3fr 1fr 1fr 1fr auto;gap:8px;align-items:end;margin-bottom:14px;">
@@ -670,9 +676,12 @@ Excluir Dividendos (se pagan al final)
 
 <!-- ============ MAYORES ============ -->
 <section class="view" id="view-mayores">
-<div class="viewhead">
+<div class="viewhead" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;">
+<div>
 <h1>Mayores</h1>
 <p>Historial completo, ordenado por fecha: por cliente/proveedor, por cuenta bancaria, o por categoría.</p>
+</div>
+<a href="#" id="link-papelera" style="font-size:12.5px;color:var(--muted);white-space:nowrap;">🗑 Papelera <span id="papelera-contador"></span></a>
 </div>
 <div class="panel" id="panel-facturar-luba-mayores" style="display:none;">
 <h3 style="color:#B8860B;">⚠ Pendiente: Yoel debe facturar a LUBA <span style="color:var(--muted);font-weight:400;font-size:12.5px;">— plata que salió de una cuenta de LUBA hacia Yoel, todavía sin la factura correspondiente</span></h3>
@@ -752,6 +761,16 @@ Solo mostrar lo que todavía no se pagó
 <aside class="saldos-sidebar">
 <div class="saldos-col-title">Saldos por cuenta</div>
 <div id="balances-strip"></div>
+<div id="mayores-cuentas-sidebar" style="display:none;margin-top:18px;">
+<div class="saldos-col-title">Elegir cuenta</div>
+<input type="text" id="mayores-cuentas-sidebar-buscar" placeholder="Buscar cuenta…" style="width:100%;padding:8px 10px;border-radius:var(--radius-sm);border:1px solid var(--border);font-family:var(--font-body);font-size:13px;margin-bottom:10px;background:var(--surface-2);color:var(--text);">
+<div id="mayores-cuentas-sidebar-list"></div>
+</div>
+<div id="mayores-categorias-sidebar" style="display:none;margin-top:18px;">
+<div class="saldos-col-title">Elegir categoría</div>
+<input type="text" id="mayores-categorias-sidebar-buscar" placeholder="Buscar categoría…" style="width:100%;padding:8px 10px;border-radius:var(--radius-sm);border:1px solid var(--border);font-family:var(--font-body);font-size:13px;margin-bottom:10px;background:var(--surface-2);color:var(--text);">
+<div id="mayores-categorias-sidebar-list"></div>
+</div>
 </aside>
 </div>
 
@@ -814,6 +833,18 @@ Solo mostrar lo que todavía no se pagó
 <label>Nota (opcional)</label>
 <input type="text" id="tr-nota" placeholder="Ej: Fondeo mensual">
 </div>
+<div class="form-row">
+<label>Categoría (opcional) <span style="font-weight:400;color:var(--muted);font-size:10.5px;">— para verlo bien clasificado en Cash Flow / Mayores</span></label>
+<select id="tr-categoria-select"></select>
+<input type="text" id="tr-categoria-new" placeholder="Nombre de la categoría nueva" style="display:none;margin-top:6px;">
+</div>
+<div id="tr-eleccion-mp" style="display:none;margin-bottom:6px;">
+<label style="font-size:12.5px;font-weight:600;">¿Esto es un Retiro o una Transferencia?</label>
+<div class="radio-group" id="tr-eleccion-mp-group" style="margin-top:4px;">
+<label class="checked" data-val="retiro">Retiro (solo egreso, sin factura)</label>
+<label data-val="transferencia">Transferencia (con factura)</label>
+</div>
+</div>
 <div id="tr-alerta-luba" style="display:none;background:var(--sub-soft);border:1px solid var(--sub-line);border-radius:8px;padding:10px 12px;font-size:12.5px;margin-bottom:6px;">
 ⚠ Esta transferencia sale de Allaria + Yoel hacia una cuenta de LUBA — queda marcada para recordarte facturarla a LUBA.
 </div>
@@ -861,10 +892,9 @@ Solo mostrar lo que todavía no se pagó
 </div>
 </div>
 <div class="form-row" id="f-yoel-row" style="display:none;">
-<label style="display:flex;align-items:center;gap:6px;font-weight:400;cursor:pointer;">
-<input type="checkbox" id="f-yoel-factura">
-Esto va hacia Yoel (Allaria + Yoel / Mercado Pago) — queda marcado para recordar que Yoel se lo tiene que facturar a LUBA
-</label>
+<div style="background:var(--sub-soft);border:1px solid var(--sub-line);border-radius:8px;padding:10px 12px;font-size:12.5px;">
+⚠ Esto sale de una cuenta de LUBA hacia una cuenta de Yoel — cancelá y usá la pestaña <strong>"Transferencia"</strong> de arriba en vez de este formulario. Ahí se carga solo, con las dos puntas juntas, y sabe solo si hace falta factura o no según las cuentas que elijas.
+</div>
 </div>
 <div class="form-grid">
 <div class="form-row">
@@ -950,6 +980,7 @@ Esto va hacia Yoel (Allaria + Yoel / Mercado Pago) — queda marcado para record
 </div>
 
 <form id="form-factura" style="display:none;">
+<div class="form-row" id="ff-asociado-nota" style="display:none;background:var(--brand-soft);color:var(--brand);border-radius:8px;padding:9px 12px;font-size:12.5px;"></div>
 <div class="form-row">
 <label>Tipo</label>
 <div class="radio-group" id="tipofact-group">
@@ -1003,7 +1034,14 @@ Esto va hacia Yoel (Allaria + Yoel / Mercado Pago) — queda marcado para record
 </select>
 </div>
 </div>
-<div class="hint" style="margin-bottom:10px;">Cargar la factura no marca el dinero como recibido. Si la marcás como Cobrada/Pagada, te vamos a pedir la cuenta y dónde alocar el movimiento.</div>
+<div class="form-row">
+<a href="#" id="link-ff-asociar-mov" style="font-size:12px;">🔗 Asociar a un movimiento ya cargado (opcional)</a>
+<div id="ff-asociar-mov-box" style="display:none;margin-top:8px;">
+<input type="text" id="ff-asociar-buscar" placeholder="Buscar por entidad, cuenta o monto…" style="width:100%;padding:8px 10px;border-radius:var(--radius-sm);border:1px solid var(--border);margin-bottom:6px;">
+<div id="ff-asociar-lista" style="max-height:180px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;"></div>
+</div>
+</div>
+<div class="hint" style="margin-bottom:10px;">Cargar la factura no marca el dinero como recibido. Si la marcás como Cobrada/Pagada (y no asociás un movimiento ya cargado), te vamos a pedir la cuenta y creamos el movimiento nuevo.</div>
 <div class="modal-actions">
 <button type="button" class="btn btn-cancel" id="btn-cancel-factura">Cancelar</button>
 <button type="button" class="btn btn-primary" id="btn-submit-factura">Guardar factura</button>
@@ -1089,6 +1127,33 @@ Esto va hacia Yoel (Allaria + Yoel / Mercado Pago) — queda marcado para record
 </div>
 </div>
 
+<div class="modal-overlay" id="modal-papelera-overlay">
+<div class="modal" style="max-width:640px;">
+<h2>🗑 Papelera de reciclaje</h2>
+<p style="color:var(--muted);font-size:12.5px;margin-top:-8px;">Los movimientos borrados quedan acá 30 días antes de eliminarse para siempre. Restaurá el que corresponda.</p>
+<div id="papelera-lista" style="max-height:400px;overflow-y:auto;"></div>
+<div class="modal-actions">
+<button type="button" class="btn btn-cancel" id="btn-papelera-cerrar">Cerrar</button>
+</div>
+</div>
+</div>
+
+<div class="modal-overlay" id="modal-vincular-overlay">
+<div class="modal" style="max-width:520px;">
+<h2>🔗 Vincular como transferencia</h2>
+<p style="color:var(--muted);font-size:12.5px;margin-top:-8px;">Elegí el movimiento del otro lado. Los dos van a quedar marcados como la misma transferencia (mismo número, espejo entre sí).</p>
+<div id="vincular-origen-resumen" style="background:var(--surface-2);border-radius:8px;padding:10px 12px;font-size:12.5px;margin-bottom:10px;"></div>
+<div class="form-row">
+<label>Buscar el otro movimiento (por entidad, cuenta o monto)</label>
+<input type="text" id="vincular-buscar" placeholder="Ej: 100000, Allaria, Yoel…">
+</div>
+<div id="vincular-resultados" style="max-height:280px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;margin-top:6px;"></div>
+<div class="modal-actions">
+<button type="button" class="btn btn-cancel" id="btn-vincular-cancelar">Cancelar</button>
+</div>
+</div>
+</div>
+
 <div class="modal-overlay" id="modal-gf-editar-overlay">
 <div class="modal" style="max-width:440px;">
 <h2>Editar Gasto Fijo</h2>
@@ -1113,6 +1178,17 @@ Esto va hacia Yoel (Allaria + Yoel / Mercado Pago) — queda marcado para record
 <div class="form-row">
 <label>Día de vencimiento (opcional) <span style="font-weight:400;color:var(--muted);font-size:10.5px;">— para el recordatorio de la Agenda</span></label>
 <input type="number" id="gfe-diavencimiento" min="1" max="31" placeholder="Ej: 10">
+</div>
+<div class="form-row">
+<label>Repetición</label>
+<div class="radio-group" id="gfe-repeticion-group">
+<label class="checked" data-val="recurrente">Recurrente (sin fin)</label>
+<label data-val="cuotas">Con cuotas</label>
+</div>
+</div>
+<div class="form-row" id="gfe-cuotas-row" style="display:none;">
+<label>Cantidad de cuotas</label>
+<input type="number" id="gfe-totalcuotas" min="1" placeholder="Ej: 12">
 </div>
 <div class="modal-actions">
 <button type="button" class="btn btn-cancel" id="btn-gfe-cancelar">Cancelar</button>
@@ -1305,10 +1381,22 @@ Esto va hacia Yoel (Allaria + Yoel / Mercado Pago) — queda marcado para record
 <p style="color:var(--muted);font-size:13px;margin:0;">Tocá cualquier celda para editar el proyectado de ese mes puntual. Se guarda solo, conectado en vivo con el resto de la app.</p>
 </div>
 <select id="anual-year-select" style="padding:8px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;"></select>
+<button type="button" id="btn-anual-ver-reales" style="padding:8px 13px;border-radius:8px;border:1px solid var(--border);background:var(--surface-2);color:var(--text-soft);font-size:12.5px;cursor:pointer;">📊 Ver reales</button>
 <button type="button" id="btn-anual-minimizar-todo" style="padding:8px 13px;border-radius:8px;border:1px solid var(--border);background:var(--surface-2);color:var(--text-soft);font-size:12.5px;cursor:pointer;">▾ Ampliar todo</button>
 </div>
 <div style="overflow-x:auto;">
 <table id="anual-table" style="width:100%;border-collapse:collapse;"></table>
+</div>
+</div>
+
+<div class="modal-overlay" id="modal-anual-reales-overlay">
+<div class="modal" style="max-width:900px;">
+<h2>📊 Reales mes a mes</h2>
+<p class="modal-sub">Lo que realmente entró/salió cada mes, por categoría — para usar de referencia al proyectar el mes siguiente. Esto no toca ni se mezcla con la tabla de proyección.</p>
+<div id="anual-reales-body" style="max-height:65vh;overflow-y:auto;overflow-x:auto;"></div>
+<div class="modal-actions">
+<button type="button" class="btn btn-cancel" id="btn-anual-reales-cerrar">Cerrar</button>
+</div>
 </div>
 </div>
 
@@ -1373,10 +1461,98 @@ let factMeses = [];
 let movAsignacion = "sin_clasificar";
 let retiroAhorroVal = "";
 let linkedFacturaId = null;
+let facturaAsociarMovId = null;
 let pendingCobroFacturaId = null;
 
 function uid(){
 return (crypto && crypto.randomUUID) ? crypto.randomUUID() : ("id-" + Date.now() + "-" + Math.random().toString(16).slice(2));
+}
+
+const DIAS_PAPELERA = 30;
+// Papelera de reciclaje: en vez de borrar un movimiento para siempre, lo guarda acá con la fecha en
+// que se borró. Se puede restaurar durante 30 días — pasado ese tiempo, se limpia sola.
+function moverAPapelera(ids){
+if(!STATE.papelera) STATE.papelera = [];
+const idSet = {};
+ids.forEach(function(id){ if(id) idSet[id] = true; });
+const aBorrar = STATE.movimientos.filter(function(m){ return idSet[m.id]; });
+aBorrar.forEach(function(m){
+STATE.papelera.push(Object.assign({}, m, { borradoEn: Date.now() }));
+});
+STATE.movimientos = STATE.movimientos.filter(function(m){ return !idSet[m.id]; });
+}
+function restaurarDePapelera(id){
+if(!STATE.papelera) return;
+const item = STATE.papelera.find(function(m){ return m.id===id; });
+if(!item) return;
+const restaurado = Object.assign({}, item);
+delete restaurado.borradoEn;
+STATE.movimientos.push(restaurado);
+STATE.papelera = STATE.papelera.filter(function(m){ return m.id!==id; });
+saveAndRender();
+toast("Movimiento restaurado.");
+}
+function limpiarPapeleraVencida(){
+if(!STATE.papelera || !STATE.papelera.length) return;
+const limite = Date.now() - DIAS_PAPELERA*24*60*60*1000;
+STATE.papelera = STATE.papelera.filter(function(m){ return (m.borradoEn||0) >= limite; });
+}
+
+// Número de transferencia corto y visible (no el transferenciaId interno, que es un UUID invisible
+// en la interfaz) — aparece igual en las dos puntas del par, para poder verificar de un vistazo que
+// son espejo una de la otra.
+function proximoNumeroTransferencia(){
+if(!STATE.proximoNumeroTransferencia) STATE.proximoNumeroTransferencia = 1;
+const n = STATE.proximoNumeroTransferencia;
+STATE.proximoNumeroTransferencia = n + 1;
+return n;
+}
+
+// Número de movimiento: un ID corto y único para CADA transacción (ingreso o egreso), distinto del
+// numeroTransferencia (que solo aplica a las dos puntas de un par) y del id interno (UUID invisible).
+function proximoNumeroMovimiento(){
+if(!STATE.proximoNumeroMovimiento) STATE.proximoNumeroMovimiento = 1;
+const n = STATE.proximoNumeroMovimiento;
+STATE.proximoNumeroMovimiento = n + 1;
+return n;
+}
+// Identificador único para mostrar en las tablas: si el movimiento es parte de una transferencia
+// (tiene numeroTransferencia), muestra "T{n}" — las dos puntas del par comparten el mismo T, así se
+// ve de un vistazo que son espejo. Si es un movimiento individual, muestra "M{n}".
+function idMovimientoDisplay(m){
+if(m.numeroTransferencia) return "T" + m.numeroTransferencia;
+if(m.numeroMovimiento) return "M" + m.numeroMovimiento;
+return "—";
+}
+// Le asigna número a todo movimiento que todavía no tenga uno — respeta el orden cronológico para
+// que los números crezcan en el mismo sentido que las fechas, y no reordena a los que ya lo tienen.
+function asignarNumerosMovimiento(){
+const sinNumero = STATE.movimientos.filter(function(m){ return !m.numeroMovimiento; });
+if(!sinNumero.length) return;
+sinNumero.sort(function(a,b){
+const fa = a.fecha||"", fb = b.fecha||"";
+if(fa!==fb) return fa<fb ? -1 : 1;
+return (a.createdAt||0) - (b.createdAt||0);
+});
+sinNumero.forEach(function(m){ m.numeroMovimiento = proximoNumeroMovimiento(); });
+}
+
+// Pares que ya estaban vinculados internamente (transferenciaId) desde antes de que existiera el
+// numeroTransferencia visible — les completa el número para que se vea el "T{n}" en las tablas, y
+// para que el botón 🔗 (que solo aparece si NO hay transferenciaId) siga oculto correctamente.
+function asignarNumerosTransferencia(){
+const porTid = {};
+STATE.movimientos.forEach(function(m){
+if(!m.transferenciaId) return;
+if(!porTid[m.transferenciaId]) porTid[m.transferenciaId] = [];
+porTid[m.transferenciaId].push(m);
+});
+Object.keys(porTid).forEach(function(tid){
+const grupo = porTid[tid];
+const yaTiene = grupo.find(function(m){ return m.numeroTransferencia; });
+const n = yaTiene ? yaTiene.numeroTransferencia : proximoNumeroTransferencia();
+grupo.forEach(function(m){ m.numeroTransferencia = n; });
+});
 }
 
 function ensureCategoria(nombre){
@@ -1464,8 +1640,9 @@ const match = lubaIngresos.find(function(mi){ return !usados[mi.id] && mi.fecha=
 if(match){
 usados[match.id] = true;
 const tid = uid();
-me.transferenciaId = tid; me.cuentaOrigen = me.cuenta; me.cuentaDestino = match.cuenta; me.categoria = categoriaAporte; me.esAporteSocios = true;
-match.transferenciaId = tid; match.cuentaOrigen = me.cuenta; match.cuentaDestino = match.cuenta; match.categoria = categoriaAporte; match.esAporteSocios = true;
+const numTr = proximoNumeroTransferencia();
+me.transferenciaId = tid; me.numeroTransferencia = numTr; me.cuentaOrigen = me.cuenta; me.cuentaDestino = match.cuenta; me.categoria = categoriaAporte; me.esAporteSocios = true;
+match.transferenciaId = tid; match.numeroTransferencia = numTr; match.cuentaOrigen = me.cuenta; match.cuentaDestino = match.cuenta; match.categoria = categoriaAporte; match.esAporteSocios = true;
 }
 });
 
@@ -1475,20 +1652,56 @@ const match = yoelIngresos.find(function(mi){ return !usados[mi.id] && mi.fecha=
 if(match){
 usados[match.id] = true;
 const tid = uid();
-me.transferenciaId = tid; me.cuentaOrigen = me.cuenta; me.cuentaDestino = match.cuenta; me.requiereFacturaYoel = true;
-match.transferenciaId = tid; match.cuentaOrigen = me.cuenta; match.cuentaDestino = match.cuenta; match.requiereFacturaYoel = true;
+const numTr = proximoNumeroTransferencia();
+me.transferenciaId = tid; me.numeroTransferencia = numTr; me.cuentaOrigen = me.cuenta; me.cuentaDestino = match.cuenta; me.requiereFacturaYoel = true;
+match.transferenciaId = tid; match.numeroTransferencia = numTr; match.cuentaOrigen = me.cuenta; match.cuentaDestino = match.cuenta; match.requiereFacturaYoel = true;
 }
 });
 }
 
 // Egresos sueltos (sin par cargado) desde una cuenta de LUBA cuya Entidad menciona "Yoel" —
-// se marcan igual para el aviso, sin necesidad de que exista el ingreso del otro lado.
+// se marcan para el aviso.
 function migrarEgresosSueltosHaciaYoel(){
 STATE.movimientos.forEach(function(m){
 if(m.tipo!=="egreso" || m.transferenciaId || m.requiereFacturaYoel) return;
 if(CUENTAS_LUBA_MIG.indexOf(m.cuenta)===-1) return;
 if((m.entidad||"").toLowerCase().indexOf("yoel") === -1) return;
 m.requiereFacturaYoel = true;
+});
+}
+
+// Completa la punta que falta: cualquier movimiento marcado "Yoel debe facturar" que quedó cargado
+// suelto (sin transferenciaId, del viejo checkbox o de la migración de arriba) — le genera el
+// ingreso correspondiente del otro lado, para que el saldo de la cuenta de Yoel sea real.
+function completarParesFacturaYoel(){
+const CUENTAS_YOEL_COMP = ["Allaria + Yoel", "Mercado Pago"];
+STATE.movimientos.slice().forEach(function(m){
+if(!m.requiereFacturaYoel || m.transferenciaId || m.tipo!=="egreso") return;
+let cuentaDestino = "Allaria + Yoel";
+if((m.entidad||"").toLowerCase().indexOf("mercado pago")!==-1) cuentaDestino = "Mercado Pago";
+const tid = uid();
+const numTr = proximoNumeroTransferencia();
+m.transferenciaId = tid;
+m.numeroTransferencia = numTr;
+m.cuentaOrigen = m.cuenta;
+m.cuentaDestino = cuentaDestino;
+const mvDestino = {
+id: uid(), tipo: "ingreso", monto: m.monto, cuenta: cuentaDestino, fecha: m.fecha, destino: "transferencia",
+entidad: "Transferencia de " + m.cuenta, categoria: m.categoria || ensureCategoria("Transferencia entre Cuentas"),
+iva: "0", subconcepto: "", facturaRef: "", mesesProduccion: [], subcontratadoId: null, createdAt: Date.now(),
+transferenciaId: tid, numeroTransferencia: numTr, cuentaOrigen: m.cuenta, cuentaDestino: cuentaDestino, requiereFacturaYoel: true
+};
+STATE.movimientos.push(mvDestino);
+});
+}
+
+// Reparación: ingresos automáticos que ya se habían generado con destino "sin_clasificar" (versión
+// anterior) — no necesitan clasificación, pasan al mismo destino neutral que usan las transferencias.
+function repararIngresosAutomaticosYoel(){
+STATE.movimientos.forEach(function(m){
+if(m.tipo==="ingreso" && m.requiereFacturaYoel && m.transferenciaId && m.destino==="sin_clasificar" && (m.entidad||"").indexOf("Transferencia de ")===0){
+m.destino = "transferencia";
+}
 });
 }
 
@@ -1701,6 +1914,11 @@ migrarCategoriasCompletasViejas();
 migrarSuscripcionRescate();
 migrarTransferenciasYoelLubaHistoricas();
 migrarEgresosSueltosHaciaYoel();
+completarParesFacturaYoel();
+asignarNumerosTransferencia();
+asignarNumerosMovimiento();
+limpiarPapeleraVencida();
+repararIngresosAutomaticosYoel();
 migrarClavesProyACompuestas();
 }
 
@@ -1733,6 +1951,15 @@ const CUENTAS_EXENTAS = ["allaria + yoel"]; // exentas de ambos impuestos
 function cuentaExenta(cuenta){
 return CUENTAS_EXENTAS.indexOf((cuenta||"").trim().toLowerCase()) !== -1;
 }
+// Por defecto, Ajuste/Transferencia/Aporte quedan afuera del Cash Flow (no son operación real de
+// venta o gasto) — pero el usuario puede marcar manualmente cualquier movimiento puntual como
+// "sí cuenta" o "no cuenta", con el check en Mayor de Cuentas/Categorías. Ese override manda
+// siempre, sin importar el destino.
+function cuentaEnCash(m){
+if(m.incluirEnCash !== undefined && m.incluirEnCash !== null) return !!m.incluirEnCash;
+return !(m.destino==="ajuste" || m.destino==="transferencia" || m.destino==="aporte");
+}
+
 function esMovimientoFondo(m){
 const cat = (m.categoria||"").trim().toLowerCase();
 return cat==="suscripción" || cat==="suscripcion" || cat==="rescate" ||
@@ -1740,28 +1967,31 @@ cat==="suscripción iva" || cat==="suscripcion iva" || cat==="suscripción inver
 cat==="rescate iva" || cat==="rescate inversión" || cat==="rescate inversion";
 }
 
-// Débito/Crédito: solo entradas y salidas normales — no aplica a cuentas exentas ni a Suscripción/Rescate.
+// Débito/Crédito: solo entradas y salidas normales — no aplica a cuentas exentas, Suscripción/Rescate,
+// ni a nada destinado a Ahorro (Fondo, Ahorro IVA) — es plata que se aparta, no un movimiento operativo.
 function impuestoDebCredFor(m){
-if(m.destino==="ajuste" || m.destino==="transferencia" || cuentaExenta(m.cuenta) || esMovimientoFondo(m)) return 0;
+if(m.destino==="ajuste" || m.destino==="transferencia" || m.destino==="ahorro" || cuentaExenta(m.cuenta) || esMovimientoFondo(m)) return 0;
 return (Number(m.monto)||0) * TASA_IMP_DEBCRED;
 }
 // Ganancias: 0,8% en ingresos normales. Nunca en cuentas exentas, Suscripción/Rescate, Ajustes de saldo,
-// Transferencias internas, ni Aportes de Socios (no son venta, son capital).
+// Transferencias internas, Aportes de Socios (no son venta, son capital), ni nada destinado a Ahorro.
 function retencionGananciasFor(m){
-if(m.destino==="ajuste" || m.destino==="transferencia" || m.destino==="aporte" || cuentaExenta(m.cuenta) || esMovimientoFondo(m)) return 0;
+if(m.destino==="ajuste" || m.destino==="transferencia" || m.destino==="aporte" || m.destino==="ahorro" || cuentaExenta(m.cuenta) || esMovimientoFondo(m)) return 0;
 if(m.tipo==="ingreso") return (Number(m.monto)||0) * TASA_GANANCIAS;
 return 0;
 }
 
 function netOf(movs){
-let ingreso=0, egreso=0, impuesto=0, retencionGanancias=0;
+let ingreso=0, egreso=0, impuesto=0, retencionGanancias=0, retencionIIBB=0, retencionOtros=0;
 movs.forEach(function(m){
 const v = Number(m.monto)||0;
 if(m.tipo==="ingreso") ingreso += v; else egreso += v;
 impuesto += impDebCredEfectivo(m);
 retencionGanancias += gananciasEfectivo(m);
+retencionIIBB += iibbEfectivo(m);
+retencionOtros += otrosEfectivo(m);
 });
-return {ingreso: ingreso, egreso: egreso, impuesto: impuesto, retencionGanancias: retencionGanancias, neto: ingreso - egreso - impuesto - retencionGanancias};
+return {ingreso: ingreso, egreso: egreso, impuesto: impuesto, retencionGanancias: retencionGanancias, retencionIIBB: retencionIIBB, retencionOtros: retencionOtros, neto: ingreso - egreso - impuesto - retencionGanancias - retencionIIBB - retencionOtros};
 }
 
 function ivaAmount(monto, iva){
@@ -1791,6 +2021,9 @@ return impuestoDebCredFor(m);
 function iibbEfectivo(m){
 return tieneRetencionGuardada(m,"iibb") ? m.retenciones.iibb : 0;
 }
+function otrosEfectivo(m){
+return tieneRetencionGuardada(m,"otros") ? m.retenciones.otros : 0;
+}
 
 function computeKPIs(){
 const enPeriodo = function(m){ return (m.fecha||"").slice(0,7)===periodoStr(); };
@@ -1798,7 +2031,8 @@ const planta = netOf(STATE.movimientos.filter(function(m){ return m.destino==="p
 const sub = netOf(STATE.movimientos.filter(function(m){ return m.destino==="subcontratado" && enPeriodo(m); })).neto;
 const retirosNet = netOf(STATE.movimientos.filter(function(m){ return m.destino==="retiro" && enPeriodo(m); }));
 const retiros = retirosNet.egreso - retirosNet.ingreso;
-const saldoCuentas = STATE.cuentas.reduce(function(acc, c){
+// Mercado Pago queda afuera del Disponible — es una cuenta de Yoel, no es plata libre de LUBA.
+const saldoCuentas = STATE.cuentas.filter(function(c){ return c !== "Mercado Pago"; }).reduce(function(acc, c){
 const n = netOf(STATE.movimientos.filter(function(m){ return m.cuenta===c; })).neto;
 return acc + n;
 }, 0);
@@ -1806,14 +2040,16 @@ const ivaDebito = STATE.movimientos.filter(function(m){ return m.tipo==="ingreso
 .reduce(function(acc, m){ return acc + ivaAmount(m.monto, m.iva); }, 0);
 const ivaCredito = STATE.movimientos.filter(function(m){ return m.tipo==="egreso"; })
 .reduce(function(acc, m){ return acc + ivaAmount(m.monto, m.iva); }, 0);
-const ivaReservado = ivaDebito;
 const posicionIva = ivaDebito - ivaCredito;
-const ivaFondeado = Math.abs(netOf(STATE.movimientos.filter(function(m){ return m.destino==="ahorro" && m.esPagoIva===true; })).neto);
+// Lo que realmente hay que reservar es la posición neta (Débito − Crédito) — el crédito fiscal de
+// las compras ya reduce lo que le debés a AFIP, no tiene sentido reservar el débito bruto entero.
+const ivaReservado = Math.max(0, posicionIva);
+const ivaFondeado = STATE.movimientos.filter(function(m){ return m.tipo==="egreso" && m.destino==="ahorro" && m.esPagoIva===true; }).reduce(function(a,m){ return a+(Number(m.monto)||0); }, 0);
 const diferenciaIva = ivaReservado - ivaFondeado;
 const ivaPendienteDeFondear = Math.max(0, diferenciaIva);
 // Plata ya apartada como Ahorro (cualquier motivo, incluido lo ya fondeado de IVA) — ya no cuenta como disponible.
 // Del IVA teórico total, solo restamos lo que TODAVÍA no está fondeado (para no descontarlo dos veces).
-const ahorroApartado = Math.max(0, netOf(STATE.movimientos.filter(function(m){ return m.destino==="ahorro"; })).neto);
+const ahorroApartado = Math.max(0, netOf(STATE.movimientos.filter(function(m){ return m.destino==="ahorro" && m.cuenta!=="Mercado Pago"; })).neto);
 const disponibleBruto = saldoCuentas - ahorroApartado - ivaPendienteDeFondear;
 const disponible = Math.max(0, disponibleBruto);
 const totalesImpuestos = netOf(STATE.movimientos);
@@ -1854,14 +2090,110 @@ wrap.innerHTML =
 '<div class="kpi-card" style="--panel-border:var(--sub-line)">' +
 '<div class="kpi-icon" style="--panel-soft:var(--sub-soft);--accent:var(--sub)">' + ICONS.card + '</div>' +
 '<div><div class="kpi-label">IVA a reservar (fondo Allaria)</div><div class="kpi-value">' + money(k.ivaReservado) + '</div>' +
-'<div class="kpi-subline">Fondeado real: ' + money(k.ivaFondeado) + ' &nbsp;·&nbsp; Diferencia: <span class="' + (k.diferenciaIva>0?'neg':'pos') + '">' + money(k.diferenciaIva) + '</span></div></div>' +
+'<div class="kpi-subline">Fondeado real: ' + money(k.ivaFondeado) + ' &nbsp;·&nbsp; Diferencia: <span class="' + (k.diferenciaIva>0?'neg':'pos') + '">' + money(k.diferenciaIva) + '</span></div>' +
+'<a href="#" id="link-iva-desglose" style="font-size:11px;">Ver desglose mensual ▾</a>' +
+'<div id="iva-desglose-body" style="display:none;margin-top:8px;"></div></div>' +
 '</div>' +
 '<div class="kpi-card" style="--panel-border:var(--brand-line)">' +
 '<div class="kpi-icon" style="--panel-soft:var(--brand-soft);--accent:var(--brand)">' + ICONS.wallet + '</div>' +
 '<div><div class="kpi-label">Disponible (libre de ahorros e IVA)</div><div class="kpi-value ' + (k.disponible>0?'pos':'') + '">' + money(k.disponible) + '</div>' +
 '<div class="kpi-subline">' + (k.ahorroApartado>0 ? ('Apartado en Ahorros: ' + money(k.ahorroApartado) + '. ') : '') + (k.ivaReservado>0 ? ('Reservado para IVA: ' + money(k.ivaReservado) + '.') : '') + '</div></div>' +
 '</div>';
+if(ivaDesgloseAbierto) renderIvaDesglose();
 }
+
+let ivaDesgloseAbierto = false;
+let ivaMesesAbiertos = {};
+function renderIvaDesglose(){
+const cont = document.getElementById("iva-desglose-body");
+const link = document.getElementById("link-iva-desglose");
+if(!cont || !link) return;
+cont.style.display = "block";
+link.textContent = "Ocultar desglose mensual ▴";
+const porMes = {};
+STATE.movimientos.forEach(function(m){
+const mes = (m.fecha||"").slice(0,7);
+if(!mes) return;
+if(!porMes[mes]) porMes[mes] = { debito: 0, credito: 0, fondeado: 0, facturas: [], compras: [], fondeos: [] };
+if(m.tipo==="ingreso"){
+const ivaM = ivaAmount(m.monto, m.iva);
+porMes[mes].debito += ivaM;
+if(ivaM>0) porMes[mes].facturas.push({ entidad: m.entidad, facturaRef: m.facturaRef, monto: m.monto, iva: ivaM });
+}
+if(m.tipo==="egreso"){
+const ivaM = ivaAmount(m.monto, m.iva);
+if(ivaM>0){
+porMes[mes].credito += ivaM;
+porMes[mes].compras.push({ entidad: m.entidad, monto: m.monto, iva: ivaM });
+}
+if(m.destino==="ahorro" && m.esPagoIva===true){
+porMes[mes].fondeado += (Number(m.monto)||0);
+porMes[mes].fondeos.push({ entidad: m.entidad, monto: m.monto, fecha: m.fecha });
+}
+}
+});
+const meses = Object.keys(porMes).sort();
+if(!meses.length){
+cont.innerHTML = '<div style="color:var(--muted);font-size:11.5px;">Todavía no hay movimientos.</div>';
+return;
+}
+let acumDif = 0;
+const filas = meses.map(function(mes){
+const d = porMes[mes];
+// Lo que hay que reservar de ese mes es la posición neta (Débito − Crédito), nunca negativa —
+// si compraste más de lo que facturaste ese mes, no hay nada que reservar, no se resta al revés.
+const netoReservar = Math.max(0, d.debito - d.credito);
+const dif = netoReservar - d.fondeado;
+acumDif += dif;
+const partes = mes.split("-");
+const label = MESES_ABREV[Number(partes[1])-1] + " " + partes[0];
+const abierto = !!ivaMesesAbiertos[mes];
+let filaDetalle = '';
+if(abierto){
+const filasFacturas = d.facturas.length
+? d.facturas.map(function(f){ return '<div style="display:flex;justify-content:space-between;padding:2px 0;"><span>' + escapeHtml(f.entidad||'—') + (f.facturaRef?(' <span style="color:var(--muted);">Nº '+escapeHtml(f.facturaRef)+'</span>'):'') + '</span><span class="mono">' + money(f.iva) + '</span></div>'; }).join("")
+: '<div style="color:var(--muted);">Sin facturas con IVA este mes.</div>';
+const filasCompras = d.compras.length
+? d.compras.map(function(f){ return '<div style="display:flex;justify-content:space-between;padding:2px 0;"><span>' + escapeHtml(f.entidad||'—') + '</span><span class="mono">' + money(f.iva) + '</span></div>'; }).join("")
+: '<div style="color:var(--muted);">Sin compras con IVA este mes.</div>';
+const filasFondeos = d.fondeos.length
+? d.fondeos.map(function(f){ return '<div style="display:flex;justify-content:space-between;padding:2px 0;"><span>' + fmtDate(f.fecha) + ' · ' + escapeHtml(f.entidad||'—') + '</span><span class="mono" style="color:var(--planta);">' + money(f.monto) + '</span></div>'; }).join("")
+: '<div style="color:var(--muted);">Nada fondeado este mes.</div>';
+filaDetalle = '<tr><td colspan="6" style="padding:8px 16px;background:var(--surface-2);">' +
+'<div style="display:flex;gap:20px;flex-wrap:wrap;">' +
+'<div style="flex:1;min-width:180px;"><div style="font-weight:700;margin-bottom:4px;">Facturas (Débito)</div>' + filasFacturas + '</div>' +
+'<div style="flex:1;min-width:180px;"><div style="font-weight:700;margin-bottom:4px;color:var(--danger);">Compras (Crédito)</div>' + filasCompras + '</div>' +
+'<div style="flex:1;min-width:180px;"><div style="font-weight:700;margin-bottom:4px;color:var(--planta);">Fondeado ese mes</div>' + filasFondeos + '</div>' +
+'</div></td></tr>';
+}
+return '<tr class="iva-mes-row" data-iva-mes="' + mes + '" style="cursor:pointer;">' +
+'<td style="padding:4px 8px;"><span style="display:inline-block;width:12px;">' + (abierto?'▾':'▸') + '</span>' + label + '</td>' +
+'<td class="mono" style="padding:4px 8px;text-align:right;">' + money(d.debito) + '</td>' +
+'<td class="mono" style="padding:4px 8px;text-align:right;color:var(--danger);">' + (d.credito>0?'-'+money(d.credito):'—') + '</td>' +
+'<td class="mono" style="padding:4px 8px;text-align:right;color:var(--planta);">' + money(d.fondeado) + '</td>' +
+'<td class="mono ' + (dif>0?'neg':'pos') + '" style="padding:4px 8px;text-align:right;font-weight:700;">' + money(dif) + '</td>' +
+'<td class="mono" style="padding:4px 8px;text-align:right;color:var(--muted);">' + money(acumDif) + '</td></tr>' + filaDetalle;
+}).join("");
+cont.innerHTML = '<table style="width:100%;font-size:11.5px;border-collapse:collapse;">' +
+'<thead><tr style="color:var(--muted);text-align:right;"><th style="text-align:left;padding:4px 8px;">Mes</th><th style="padding:4px 8px;">Débito</th><th style="padding:4px 8px;">Crédito</th><th style="padding:4px 8px;">Fondeado</th><th style="padding:4px 8px;">Diferencia</th><th style="padding:4px 8px;">Acumulado</th></tr></thead>' +
+'<tbody>' + filas + '</tbody></table>';
+}
+document.getElementById("kpi-strip").addEventListener("click", function(e){
+const link = e.target.closest("#link-iva-desglose");
+if(link){
+e.preventDefault();
+ivaDesgloseAbierto = !ivaDesgloseAbierto;
+if(ivaDesgloseAbierto){ renderIvaDesglose(); }
+else { document.getElementById("iva-desglose-body").style.display = "none"; link.textContent = "Ver desglose mensual ▾"; }
+return;
+}
+const filaMes = e.target.closest("[data-iva-mes]");
+if(filaMes){
+const mes = filaMes.dataset.ivaMes;
+ivaMesesAbiertos[mes] = !ivaMesesAbiertos[mes];
+renderIvaDesglose();
+}
+});
 
 function renderKPIsFacturas(){
 const k = computeKPIs();
@@ -1891,9 +2223,14 @@ wrap.innerHTML =
 
 function renderBalancesStrip(){
 const wrap = document.getElementById("balances-strip");
-wrap.innerHTML = STATE.cuentas.map(function(c){
+// Mercado Pago queda afuera de este panel a propósito — sigue disponible entero en Mayor de
+// Cuentas, pero no es una cuenta de uso diario de LUBA como para mostrarla acá al lado.
+wrap.innerHTML = STATE.cuentas.filter(function(c){ return c !== "Mercado Pago"; }).map(function(c){
 const movsCuenta = STATE.movimientos.filter(function(m){ return m.cuenta===c; });
-const total = netOf(movsCuenta).neto;
+const n = netOf(movsCuenta);
+// Saldo real de la cuenta: plata que efectivamente entró menos la que salió, y menos lo que
+// se retuvo en el camino (Ganancias, IIBB, Imp. Déb/Créd) — esa plata nunca llegó a la cuenta.
+const total = n.neto;
 const ahorroCuenta = netOf(movsCuenta.filter(function(m){ return m.destino==="ahorro"; })).neto;
 // Si el ahorro entró como ingreso (neto positivo), esa plata no es libre: se resta.
 // Si el ahorro ya salió como egreso (neto negativo), el total ya la refleja: no se resta de nuevo.
@@ -2094,11 +2431,22 @@ const actionsHtml = soloUno
 '<button class="icon-btn" data-act="editar" data-id="' + gmovs[0].id + '" title="Editar">' + ICONS.edit + '</button> ' +
 '<button class="icon-btn danger" data-act="borrar" data-id="' + gmovs[0].id + '" title="Borrar">' + ICONS.trash + '</button>'
 : '<button class="chip-btn" data-act="toggle-detail" data-key="' + destino + '-' + escapeHtml(String(key)) + '">Ver detalle</button>';
+let vigenciaHtml = "";
+if(destino==="subcontratado"){
+const sc = STATE.subcontratados.find(function(s){ return s.id===key; });
+if(sc && (sc.fechaInicio || sc.cerrado)){
+const partes = [];
+if(sc.fechaInicio) partes.push('Inicio: ' + fmtDate(sc.fechaInicio));
+if(sc.cerrado) partes.push('<span style="color:var(--danger);">Cerrado' + (sc.fechaCierre?(' el '+fmtDate(sc.fechaCierre)):'') + '</span>');
+vigenciaHtml = '<div class="group-meta" style="margin-top:1px;">' + partes.join(' · ') + '</div>';
+}
+}
 html += '<div class="group-card">' +
 '<div class="group-top">' +
 '<div>' +
 '<div class="group-name">' + escapeHtml(label) + '</div>' +
 '<div class="group-meta">' + gmovs.length + ' mov. · Ing ' + money(n.ingreso) + ' / Egr ' + money(n.egreso) + '</div>' +
+vigenciaHtml +
 '</div>' +
 '<div class="group-net ' + (montoBruto>=0?'net-pos':'net-neg') + '">' + money(Math.abs(montoBruto)) + '</div>' +
 '</div>' +
@@ -2227,7 +2575,7 @@ if(movimiento && movimiento.transferenciaId){
 const ok = await confirmDialog("Este movimiento es una punta de una transferencia entre cuentas. Si lo borrás, se borran las dos puntas juntas. ¿Confirmás?", "Borrar transferencia");
 if(!ok) return;
 const tid = movimiento.transferenciaId;
-STATE.movimientos = STATE.movimientos.filter(function(m){ return m.transferenciaId!==tid; });
+moverAPapelera(STATE.movimientos.filter(function(m){ return m.transferenciaId===tid; }).map(function(m){ return m.id; }));
 saveAndRender();
 toast("Transferencia borrada (las dos puntas).");
 return;
@@ -2244,17 +2592,20 @@ facturaVinculada.estadoAnterior = null;
 const ok = await confirmDialog("¿Borrar este movimiento? No se puede deshacer.", "Borrar movimiento");
 if(!ok) return;
 }
-STATE.movimientos = STATE.movimientos.filter(function(m){ return m.id!==id; });
+moverAPapelera([id]);
 saveAndRender();
-toast(facturaVinculada ? "Movimiento borrado. La factura volvió a su estado anterior." : "Movimiento borrado.");
+toast(facturaVinculada ? "Movimiento borrado (va a la papelera). La factura volvió a su estado anterior." : "Movimiento borrado (va a la papelera).");
 }
 
 const subcOverlay = document.getElementById("modal-subc-overlay");
 function openSubcModal(movId){
 pendingSubcTargetId = movId;
+document.querySelector("#modal-subc-overlay h2").textContent = movId ? "Elegir subcontratado" : "Gestionar subcontratados";
+document.querySelector("#modal-subc-overlay .modal-sub").textContent = movId ? "Desplegable cerrado — nunca texto libre." : "Cargá la fecha de inicio o cerrá el que corresponda. Tocar el nombre no hace nada acá — es solo gestión.";
 renderSubcList();
 subcOverlay.classList.add("open");
 }
+document.getElementById("btn-gestionar-subc").addEventListener("click", function(){ openSubcModal(null); });
 function renderSubcList(){
 const list = document.getElementById("subc-list");
 if(!STATE.subcontratados.length){
@@ -2262,17 +2613,38 @@ list.innerHTML = '<div class="subc-item"><span style="color:var(--muted);">Todav
 return;
 }
 list.innerHTML = STATE.subcontratados.map(function(s){
-return '<div class="subc-item">' +
-'<span class="subc-pick" data-id="' + s.id + '">' + escapeHtml(s.nombre) + '</span>' +
+const cerrado = !!s.cerrado;
+return '<div class="subc-item" style="flex-direction:column;align-items:stretch;gap:6px;' + (cerrado?'opacity:0.6;':'') + '">' +
+'<div style="display:flex;justify-content:space-between;align-items:center;">' +
+'<span class="subc-pick" data-id="' + s.id + '" data-cerrado="' + cerrado + '" style="' + (cerrado?'pointer-events:none;text-decoration:line-through;':'') + '">' + escapeHtml(s.nombre) + (cerrado?' <span class="badge" style="background:var(--surface-2);color:var(--muted);">Cerrado</span>':'') + '</span>' +
 '<button class="icon-btn danger" data-del="' + s.id + '" title="Eliminar">' + ICONS.trash + '</button>' +
+'</div>' +
+'<div style="display:flex;gap:8px;align-items:center;font-size:11px;color:var(--muted);flex-wrap:wrap;">' +
+'<label style="display:flex;align-items:center;gap:4px;">Inicio: <input type="date" data-fecha-inicio="' + s.id + '" value="' + (s.fechaInicio||'') + '" style="font-size:11px;padding:2px 4px;border-radius:5px;border:1px solid var(--border);"></label>' +
+(cerrado
+? ('<button class="icon-btn" data-reabrir="' + s.id + '" style="font-size:11px;width:auto;padding:2px 8px;">↺ Reabrir</button>' + (s.fechaCierre ? (' cerrado el ' + fmtDate(s.fechaCierre)) : ''))
+: '<button class="icon-btn" data-cerrar="' + s.id + '" style="font-size:11px;width:auto;padding:2px 8px;">🔒 Cerrar</button>') +
+'</div>' +
 '</div>';
 }).join("");
 }
 document.getElementById("subc-list").addEventListener("click", async function(e){
 const pick = e.target.closest(".subc-pick");
-if(pick){
+if(pick && pick.dataset.cerrado!=="true" && pendingSubcTargetId){
 assignSubcontratado(pendingSubcTargetId, pick.dataset.id);
 subcOverlay.classList.remove("open");
+return;
+}
+const cerrar = e.target.closest("[data-cerrar]");
+if(cerrar){
+const s = STATE.subcontratados.find(function(x){ return x.id===cerrar.dataset.cerrar; });
+if(s){ s.cerrado = true; s.fechaCierre = new Date().toISOString().slice(0,10); saveState(); renderSubcList(); renderClassifiedCol("subcontratado","col-sub-body","count-sub"); }
+return;
+}
+const reabrir = e.target.closest("[data-reabrir]");
+if(reabrir){
+const s = STATE.subcontratados.find(function(x){ return x.id===reabrir.dataset.reabrir; });
+if(s){ s.cerrado = false; s.fechaCierre = null; saveState(); renderSubcList(); renderClassifiedCol("subcontratado","col-sub-body","count-sub"); }
 return;
 }
 const del = e.target.closest("[data-del]");
@@ -2284,6 +2656,12 @@ saveState();
 renderSubcList();
 }
 }
+});
+document.getElementById("subc-list").addEventListener("change", function(e){
+const inp = e.target.closest("[data-fecha-inicio]");
+if(!inp) return;
+const s = STATE.subcontratados.find(function(x){ return x.id===inp.dataset.fechaInicio; });
+if(s){ s.fechaInicio = inp.value; saveState(); renderClassifiedCol("subcontratado","col-sub-body","count-sub"); }
 });
 document.getElementById("btn-add-subc").addEventListener("click", function(){
 const input = document.getElementById("new-subc-name");
@@ -2327,7 +2705,7 @@ if(pSub > 0){
 const copySub = Object.assign({}, orig, {id: uid(), monto: round2(orig.monto * pSub/100), destino:"subcontratado", subcontratadoId:null});
 STATE.movimientos.push(copySub);
 }
-STATE.movimientos = STATE.movimientos.filter(function(m){ return m.id!==orig.id; });
+moverAPapelera([orig.id]);
 splitOverlay.classList.remove("open");
 saveAndRender();
 toast("Movimiento repartido. Asigná el subcontratado en la parte que corresponda.");
@@ -2374,7 +2752,7 @@ return '<option value="' + escapeHtml(c) + '">' + escapeHtml(c) + '</option>';
 
 function fillSubcontratadoSelect(){
 const sel = document.getElementById("f-subcontratado-select");
-let html = STATE.subcontratados.map(function(s){
+let html = STATE.subcontratados.filter(function(s){ return !s.cerrado; }).map(function(s){
 return '<option value="' + s.id + '">' + escapeHtml(s.nombre) + '</option>';
 }).join("");
 html += '<option value="__new__">➕ Nuevo subcontratado…</option>';
@@ -2540,6 +2918,8 @@ document.getElementById("tr-fecha").value = document.getElementById("tr-fecha").
 document.getElementById("tr-origen").innerHTML = STATE.cuentas.map(function(c){ return '<option value="' + escapeHtml(c) + '">' + escapeHtml(c) + '</option>'; }).join("");
 document.getElementById("tr-destino").innerHTML = STATE.cuentas.map(function(c){ return '<option value="' + escapeHtml(c) + '">' + escapeHtml(c) + '</option>'; }).join("");
 if(STATE.cuentas.length>1) document.getElementById("tr-destino").selectedIndex = 1;
+fillSimpleListSelect("tr-categoria-select", "tr-categoria-new", "categorias", "Sin categoría específica");
+document.querySelectorAll("#tr-eleccion-mp-group label").forEach(function(l){ l.classList.toggle("checked", l.dataset.val==="retiro"); });
 actualizarAlertaLuba();
 }
 }
@@ -2553,6 +2933,84 @@ const t = e.target.closest(".modal-tab");
 if(!t) return;
 switchPrimaryTab(t.dataset.primary);
 });
+
+function abrirFacturaDesdeMovimiento(movId){
+const m = STATE.movimientos.find(function(x){ return x.id===movId; });
+if(!m) return;
+openLoadModal();
+switchPrimaryTab("factura");
+facturaAsociarMovId = movId;
+setTipoUI(tipoFactGroup, m.tipo==="ingreso" ? "emitida" : "recibida");
+document.getElementById("ff-entidad").value = m.entidad || "";
+document.getElementById("ff-monto").value = m.monto;
+document.getElementById("ff-fecha").value = m.fecha;
+document.getElementById("ff-iva").value = m.iva || "0";
+document.getElementById("ff-estado").value = "cobrada";
+document.getElementById("ff-asociado-nota").style.display = "block";
+document.getElementById("ff-asociado-nota").innerHTML = '🔗 Se va a asociar directamente a este movimiento ya cargado (' + fmtDate(m.fecha) + ' · ' + escapeHtml(m.entidad||'') + ' · ' + money(m.monto) + '), no va a crear uno nuevo.';
+}
+
+function renderFfAsociarLista(filtro){
+const tipoFact = tipoFactGroup.dataset.value || "emitida";
+const tipoMovEsperado = tipoFact==="emitida" ? "ingreso" : "egreso";
+const facturaMovIds = {};
+STATE.facturas.forEach(function(f){ if(f.movimientoId && f.id!==factEditingId) facturaMovIds[f.movimientoId] = true; });
+const f = (filtro||"").trim().toLowerCase();
+// Solo clientes y proveedores de verdad — Planta Propia, Subcontratados, Ambos o todavía Sin
+// Clasificar. Retiros, Ahorro, Aportes de Socios, Ajustes de Saldo y Transferencias entre cuentas
+// propias nunca tienen una factura real detrás, no tiene sentido ofrecerlas acá.
+let candidatos = STATE.movimientos.filter(function(m){
+if(m.tipo!==tipoMovEsperado) return false;
+if(facturaMovIds[m.id]) return false;
+if(!DESTINOS_CON_FACTURA[m.destino] || m.transferenciaId) return false;
+if(CATEGORIAS_SIN_FACTURA[m.categoria]) return false;
+return true;
+});
+if(f){
+candidatos = candidatos.filter(function(m){
+const campos = [m.entidad, m.cuenta, String(m.monto)].filter(Boolean).join(" ").toLowerCase();
+return campos.indexOf(f) !== -1;
+});
+}
+candidatos.sort(function(a,b){ return (b.fecha||"").localeCompare(a.fecha||""); });
+candidatos = candidatos.slice(0, 25);
+const cont = document.getElementById("ff-asociar-lista");
+if(!candidatos.length){
+cont.innerHTML = '<div style="padding:10px;color:var(--muted);font-size:12px;">No encontré movimientos de ' + (tipoFact==='emitida'?'ingreso':'egreso') + ' sin factura que coincidan.</div>';
+return;
+}
+cont.innerHTML = candidatos.map(function(m){
+const sel = m.id===facturaAsociarMovId;
+return '<div class="vincular-candidato" data-ff-elegir-mov="' + m.id + '" style="padding:8px 10px;border-bottom:1px solid var(--border);cursor:pointer;display:flex;justify-content:space-between;' + (sel?'background:var(--brand-soft);':'') + '">' +
+'<div><div style="font-weight:600;">' + escapeHtml(m.entidad||'—') + '</div><div style="font-size:11px;color:var(--muted);">' + escapeHtml(m.cuenta) + ' · ' + fmtDate(m.fecha) + '</div></div>' +
+'<div class="mono" style="font-weight:700;">' + money(m.monto) + '</div>' +
+'</div>';
+}).join("");
+}
+document.getElementById("link-ff-asociar-mov").addEventListener("click", function(e){
+e.preventDefault();
+const box = document.getElementById("ff-asociar-mov-box");
+const abrir = box.style.display === "none";
+box.style.display = abrir ? "block" : "none";
+if(abrir) renderFfAsociarLista("");
+});
+document.getElementById("ff-asociar-buscar").addEventListener("input", function(){
+renderFfAsociarLista(this.value);
+});
+document.getElementById("ff-asociar-lista").addEventListener("click", function(e){
+const el = e.target.closest("[data-ff-elegir-mov]");
+if(!el) return;
+facturaAsociarMovId = el.dataset.ffElegirMov;
+const m = STATE.movimientos.find(function(x){ return x.id===facturaAsociarMovId; });
+if(m){
+document.getElementById("ff-entidad").value = m.entidad || "";
+document.getElementById("ff-monto").value = m.monto;
+document.getElementById("ff-fecha").value = m.fecha;
+document.getElementById("ff-iva").value = m.iva || "0";
+document.getElementById("ff-estado").value = "cobrada";
+}
+renderFfAsociarLista(document.getElementById("ff-asociar-buscar").value);
+});
 document.getElementById("modal-tabs-secondary").addEventListener("click", function(e){
 const t = e.target.closest(".modal-tab");
 if(!t) return;
@@ -2562,6 +3020,9 @@ switchSecondaryTab(t.dataset.tab);
 function openLoadModal(){
 editingId = null;
 factEditingId = null;
+facturaAsociarMovId = null;
+document.getElementById("ff-asociado-nota").style.display = "none";
+document.getElementById("ff-asociar-mov-box").style.display = "none";
 document.getElementById("modal-title").textContent = "Cargar";
 document.getElementById("btn-submit-manual").textContent = "Guardar movimiento";
 document.getElementById("btn-submit-factura").textContent = "Guardar factura";
@@ -2621,7 +3082,6 @@ setSelectValueEnsuring("f-categoria-select", "categorias", m.categoria||"");
 setSelectValueEnsuring("f-subconcepto-select", "subconceptos", m.subconcepto||"");
 document.getElementById("f-facturaref").value = m.facturaRef||"";
 actualizarVisibilidadYoelCheckbox();
-document.getElementById("f-yoel-factura").checked = !!m.requiereFacturaYoel;
 movMeses = (m.mesesProduccion||[]).slice();
 renderMesesChips("mov-meses-chips", movMeses);
 document.getElementById("factura-match-box").style.display = "none";
@@ -2680,7 +3140,6 @@ const cuenta = document.getElementById("f-cuenta").value;
 const row = document.getElementById("f-yoel-row");
 const aplica = tipo==="egreso" && CUENTAS_LUBA.indexOf(cuenta)!==-1;
 row.style.display = aplica ? "block" : "none";
-if(!aplica) document.getElementById("f-yoel-factura").checked = false;
 }
 tipoFactGroup.addEventListener("click", function(e){
 const l = e.target.closest("label");
@@ -2695,34 +3154,72 @@ document.getElementById("btn-cancel-transferencia").addEventListener("click", fu
 
 const CUENTAS_LUBA = ["Banco Macro", "Banco Galicia", "Allaria + Luba"];
 const CUENTAS_YOEL = ["Allaria + Yoel", "Mercado Pago"];
-function tipoDeMovimientoEntreCuentas(origen, destino){
-const origenEsYoel = CUENTAS_YOEL.indexOf(origen) !== -1;
-const destinoEsYoel = CUENTAS_YOEL.indexOf(destino) !== -1;
+function tipoDeMovimientoEntreCuentas(origen, destino, eleccionMP){
 const origenEsLuba = CUENTAS_LUBA.indexOf(origen) !== -1;
 const destinoEsLuba = CUENTAS_LUBA.indexOf(destino) !== -1;
-if(origenEsYoel && destinoEsLuba) return "aporte"; // Yoel → LUBA
-if(origenEsLuba && destinoEsYoel) return "egreso-yoel-factura"; // LUBA → Yoel
-return "transferencia"; // ambas del mismo lado (o cuenta no reconocida): interna, neutral
+const origenEsYoel = CUENTAS_YOEL.indexOf(origen) !== -1;
+const destinoEsYoel = CUENTAS_YOEL.indexOf(destino) !== -1;
+if(origenEsLuba && destinoEsLuba) return "transferencia"; // entre cuentas de LUBA: intercompany, sin factura, espejo, 100% neutral
+if(origenEsYoel && destinoEsYoel) return "transferencia-yoel"; // entre cuentas de Yoel (ej. Allaria+Yoel -> Mercado Pago): sin factura, PERO la punta de origen es un gasto real (cuenta en Cash Flow)
+if(origenEsLuba && destino === "Mercado Pago"){
+return (eleccionMP === "retiro") ? "retiro-simple" : "egreso-yoel-factura"; // elegís: Retiro (solo egreso, sin factura) o Transferencia (espejo, CON factura)
+}
+if(origenEsLuba && destino === "Allaria + Yoel") return "egreso-yoel-factura"; // LUBA -> Allaria+Yoel: siempre transferencia (espejo), CON factura
+return null; // Aporte (Yoel/Mercado Pago -> LUBA) y cualquier otro caso: no lo maneja esta pestaña
+}
+function eleccionMPActual(){
+const checked = document.querySelector("#tr-eleccion-mp-group label.checked");
+return checked ? checked.dataset.val : "retiro";
 }
 function actualizarAlertaLuba(){
 const origen = document.getElementById("tr-origen").value;
 const destino = document.getElementById("tr-destino").value;
-const tipo = tipoDeMovimientoEntreCuentas(origen, destino);
+const mostrarEleccionMP = CUENTAS_LUBA.indexOf(origen)!==-1 && destino === "Mercado Pago";
+document.getElementById("tr-eleccion-mp").style.display = mostrarEleccionMP ? "block" : "none";
+const tipo = tipoDeMovimientoEntreCuentas(origen, destino, eleccionMPActual());
 const alertaEl = document.getElementById("tr-alerta-luba");
-if(tipo==="aporte"){
+const btnGuardar = document.getElementById("btn-guardar-transferencia");
+if(tipo==="transferencia"){
 alertaEl.style.display = "block";
-alertaEl.style.background = "var(--planta-soft)"; alertaEl.style.borderColor = "var(--planta-line)";
-alertaEl.innerHTML = "💰 Esto sale de una cuenta de Yoel hacia una cuenta de LUBA — se carga como <strong>Aporte de Socios</strong> (no lleva Retención de Ganancias).";
+alertaEl.style.background = "#F0F2F7"; alertaEl.style.borderColor = "var(--border-strong)";
+alertaEl.innerHTML = "🔁 Transferencia intercompany entre cuentas de LUBA — <strong>sin factura</strong>, 100% neutral (no cuenta como gasto). Se carga un egreso en una y un ingreso en la otra, con el mismo número de transferencia.";
+btnGuardar.disabled = false;
+} else if(tipo==="transferencia-yoel"){
+alertaEl.style.display = "block";
+alertaEl.style.background = "#F0F2F7"; alertaEl.style.borderColor = "var(--border-strong)";
+alertaEl.innerHTML = "🔁 Entre tus propias cuentas — <strong>sin factura</strong>. La punta de " + escapeHtml(origen) + " es un gasto real (con la categoría que elijas) y vas a tener que clasificarla en el tablero de Clasificación; la punta de " + escapeHtml(destino) + " es neutral.";
+btnGuardar.disabled = false;
+} else if(tipo==="retiro-simple"){
+alertaEl.style.display = "block";
+alertaEl.style.background = "#F0F2F7"; alertaEl.style.borderColor = "var(--border-strong)";
+alertaEl.innerHTML = "💸 Retiro — se carga solo el egreso en " + escapeHtml(origen) + " con categoría <strong>Retiro</strong>, sin ingreso espejo y <strong>sin factura</strong>.";
+btnGuardar.disabled = false;
 } else if(tipo==="egreso-yoel-factura"){
 alertaEl.style.display = "block";
 alertaEl.style.background = "var(--sub-soft)"; alertaEl.style.borderColor = "var(--sub-line)";
-alertaEl.innerHTML = "⚠ Esto sale de LUBA hacia una cuenta de Yoel — es un Egreso real de LUBA, y queda marcado para recordarte que <strong>Yoel se lo tiene que facturar a LUBA</strong>.";
+alertaEl.innerHTML = "⚠ Transferencia — se carga el egreso en " + escapeHtml(origen) + " y el ingreso en " + escapeHtml(destino) + ", con el mismo número, y queda marcado para recordarte que <strong>Yoel se lo tiene que facturar a LUBA</strong>.";
+btnGuardar.disabled = false;
+} else if(origen && destino && origen!==destino){
+alertaEl.style.display = "block";
+alertaEl.style.background = "var(--danger-soft)"; alertaEl.style.borderColor = "var(--danger-line)";
+alertaEl.innerHTML = "Este caso (Aporte de Yoel/Mercado Pago hacia LUBA, u otra combinación) no se carga acá — cargá cada lado por separado como <strong>Movimiento</strong> normal (un egreso y un ingreso), y si querés los vinculás después con el botón 🔗 en Mayor de Cuentas.";
+btnGuardar.disabled = true;
 } else {
 alertaEl.style.display = "none";
+btnGuardar.disabled = false;
 }
 }
 document.getElementById("tr-origen").addEventListener("change", actualizarAlertaLuba);
 document.getElementById("tr-destino").addEventListener("change", actualizarAlertaLuba);
+document.getElementById("tr-eleccion-mp-group").addEventListener("click", function(e){
+const l = e.target.closest("label");
+if(!l) return;
+this.querySelectorAll("label").forEach(function(x){ x.classList.toggle("checked", x===l); });
+actualizarAlertaLuba();
+});
+document.getElementById("tr-categoria-select").addEventListener("change", function(){
+document.getElementById("tr-categoria-new").style.display = (this.value==="__new__") ? "block" : "none";
+});
 
 document.getElementById("btn-guardar-transferencia").addEventListener("click", function(){
 try{
@@ -2733,40 +3230,71 @@ const fecha = document.getElementById("tr-fecha").value;
 const nota = document.getElementById("tr-nota").value.trim();
 if(!origen || !destino || origen===destino){ toast("Elegí dos cuentas distintas."); return; }
 if(!monto || !fecha){ toast("Completá el monto (distinto de 0) y la fecha."); return; }
-const tipoMov = tipoDeMovimientoEntreCuentas(origen, destino);
-const transferenciaId = uid();
+const tipoMov = tipoDeMovimientoEntreCuentas(origen, destino, eleccionMPActual());
+if(!tipoMov){ toast("Este caso no se carga por acá — cargá cada lado como Movimiento normal."); return; }
 const baseNota = nota ? (" — " + nota) : "";
 
-let categoria, destinoCampo, esAporteSocios = false, requiereFacturaYoel = false, mensajeToast;
-if(tipoMov==="aporte"){
-categoria = ensureCategoria("Aporte de Socios");
-destinoCampo = "aporte";
-esAporteSocios = true;
-mensajeToast = "Aporte de socio cargado.";
-} else if(tipoMov==="egreso-yoel-factura"){
-categoria = ensureCategoria("Pago a Yoel (a facturar)");
-destinoCampo = "sin_clasificar"; // es un egreso real, clasificalo como Planta/Sub/Retiro según corresponda
+if(tipoMov==="retiro-simple"){
+// Solo el egreso, con categoría Retiro, sin ingreso espejo, sin factura.
+const mv = {
+id: uid(), tipo: "egreso", monto: Math.abs(monto), cuenta: origen, fecha: fecha, destino: "retiro",
+entidad: "Retiro hacia " + destino + baseNota, categoria: ensureCategoria("Retiro"), iva: "0", subconcepto: "",
+facturaRef: "", mesesProduccion: [], subcontratadoId: null, createdAt: Date.now(),
+cuentaOrigen: origen, cuentaDestino: destino
+};
+STATE.movimientos.push(mv);
+overlay.classList.remove("open");
+saveAndRender();
+toast("Retiro cargado.");
+return;
+}
+
+const transferenciaId = uid();
+let categoriaOrigen, categoriaDestino, destinoCampoOrigen, destinoCampoDestino, requiereFacturaYoel = false, mensajeToast;
+if(tipoMov==="egreso-yoel-factura"){
+categoriaOrigen = categoriaDestino = ensureCategoria("Pago a Yoel (a facturar)");
+destinoCampoOrigen = "sin_clasificar"; // es un egreso real de LUBA, clasificalo como Planta/Sub/Retiro
+destinoCampoDestino = "transferencia"; // la punta de Yoel/Mercado Pago no es un ingreso operativo, no pide clasificación
 requiereFacturaYoel = true;
-mensajeToast = "Egreso cargado — marcado para recordarte que Yoel debe facturarlo.";
+mensajeToast = "Transferencia cargada — marcado para recordarte que Yoel debe facturarla.";
+} else if(tipoMov==="transferencia-yoel"){
+const categoriaElegida = resolveSimpleListSelect("tr-categoria-select", "tr-categoria-new", "categorias");
+// Entre cuentas de Yoel: la punta de origen SÍ es un gasto real (con la categoría que elegiste,
+// ej. "Herramientas") y necesita que la clasifiques en el tablero (Planta/Sub/Retiro) para que
+// aparezca en Cash Flow — no es plata que "desaparece" en una transferencia neutral. La punta
+// destino (la otra cuenta de Yoel) sigue siendo neutral, no es un ingreso nuevo.
+categoriaOrigen = categoriaElegida || ensureCategoria("Otros Gastos");
+categoriaDestino = ensureCategoria("Transferencia entre Cuentas");
+destinoCampoOrigen = "sin_clasificar";
+destinoCampoDestino = "transferencia";
+mensajeToast = "Gasto cargado — clasificalo en el tablero de Clasificación (Planta/Sub/Retiro).";
 } else {
-categoria = ensureCategoria("Transferencia entre Cuentas");
-destinoCampo = "transferencia";
+const categoriaElegida = resolveSimpleListSelect("tr-categoria-select", "tr-categoria-new", "categorias");
+// La categoría elegida (ej. "Herramientas") va SOLO del lado del gasto real (el egreso) — la punta
+// espejo (el ingreso en la otra cuenta) queda con la categoría neutral, para que no aparezca
+// contado dos veces si después mirás esa categoría en Mayores (una vez como gasto, otra como si
+// fuera un ingreso nuevo, cuando es la misma plata que solo cambió de cuenta).
+categoriaOrigen = categoriaElegida || ensureCategoria("Transferencia entre Cuentas");
+categoriaDestino = ensureCategoria("Transferencia entre Cuentas");
+destinoCampoOrigen = "transferencia";
+destinoCampoDestino = "transferencia";
 mensajeToast = "Transferencia cargada.";
 }
 
+const numeroTransferencia = proximoNumeroTransferencia();
 const mvOrigen = {
-id: uid(), tipo: "egreso", monto: Math.abs(monto), cuenta: origen, fecha: fecha, destino: destinoCampo,
-entidad: (tipoMov==="aporte" ? "Aporte a " : "Transferencia a ") + destino + baseNota, categoria: categoria, iva: "0", subconcepto: "",
+id: uid(), tipo: "egreso", monto: Math.abs(monto), cuenta: origen, fecha: fecha, destino: destinoCampoOrigen,
+entidad: "Transferencia a " + destino + baseNota, categoria: categoriaOrigen, iva: "0", subconcepto:"",
 facturaRef: "", mesesProduccion: [], subcontratadoId: null, createdAt: Date.now(),
-transferenciaId: transferenciaId, cuentaOrigen: origen, cuentaDestino: destino,
-esAporteSocios: esAporteSocios, requiereFacturaYoel: requiereFacturaYoel
+transferenciaId: transferenciaId, numeroTransferencia: numeroTransferencia, cuentaOrigen: origen, cuentaDestino: destino,
+requiereFacturaYoel: requiereFacturaYoel
 };
 const mvDestino = {
-id: uid(), tipo: "ingreso", monto: Math.abs(monto), cuenta: destino, fecha: fecha, destino: destinoCampo,
-entidad: (tipoMov==="aporte" ? "Aporte de " : "Transferencia de ") + origen + baseNota, categoria: categoria, iva: "0", subconcepto: "",
+id: uid(), tipo: "ingreso", monto: Math.abs(monto), cuenta: destino, fecha: fecha, destino: destinoCampoDestino,
+entidad: "Transferencia de " + origen + baseNota, categoria: categoriaDestino, iva: "0", subconcepto: "",
 facturaRef: "", mesesProduccion: [], subcontratadoId: null, createdAt: Date.now(),
-transferenciaId: transferenciaId, cuentaOrigen: origen, cuentaDestino: destino,
-esAporteSocios: esAporteSocios, requiereFacturaYoel: requiereFacturaYoel
+transferenciaId: transferenciaId, numeroTransferencia: numeroTransferencia, cuentaOrigen: origen, cuentaDestino: destino,
+requiereFacturaYoel: requiereFacturaYoel
 };
 STATE.movimientos.push(mvOrigen, mvDestino);
 overlay.classList.remove("open");
@@ -2816,7 +3344,6 @@ const categoria = resolveSimpleListSelect("f-categoria-select", "f-categoria-new
 const subconcepto = resolveSimpleListSelect("f-subconcepto-select", "f-subconcepto-new", "subconceptos");
 const facturaRef = document.getElementById("f-facturaref").value.trim();
 const mesesProduccion = movMeses.slice();
-const requiereFacturaYoel = document.getElementById("f-yoel-row").style.display !== "none" && document.getElementById("f-yoel-factura").checked;
 
 if(!entidad || !monto || !fecha || !cuenta){
 toast("Completá entidad, monto, fecha y cuenta.");
@@ -2826,7 +3353,7 @@ return;
 if(editingId){
 const m = STATE.movimientos.find(function(x){ return x.id===editingId; });
 if(m){
-Object.assign(m, {tipo:tipo, entidad:entidad, monto:monto, fecha:fecha, cuenta:cuenta, iva:iva, categoria:categoria, subconcepto:subconcepto, facturaRef:facturaRef, mesesProduccion:mesesProduccion, requiereFacturaYoel:requiereFacturaYoel});
+Object.assign(m, {tipo:tipo, entidad:entidad, monto:monto, fecha:fecha, cuenta:cuenta, iva:iva, categoria:categoria, subconcepto:subconcepto, facturaRef:facturaRef, mesesProduccion:mesesProduccion});
 }
 toast("Movimiento actualizado.");
 overlay.classList.remove("open");
@@ -2834,7 +3361,7 @@ saveAndRender();
 return;
 }
 
-const base = {tipo:tipo, entidad:entidad, fecha:fecha, cuenta:cuenta, iva:iva, categoria:categoria, subconcepto:subconcepto, facturaRef:facturaRef, mesesProduccion:mesesProduccion, requiereFacturaYoel:requiereFacturaYoel, createdAt: Date.now()};
+const base = {tipo:tipo, entidad:entidad, fecha:fecha, cuenta:cuenta, iva:iva, categoria:categoria, subconcepto:subconcepto, facturaRef:facturaRef, mesesProduccion:mesesProduccion, createdAt: Date.now()};
 const asigFinal = retiroAhorroVal || movAsignacion;
 let createdMov = null;
 
@@ -2946,6 +3473,18 @@ if(targetFactura){
 const yaEstabaCobrada = targetFactura.estado === "cobrada";
 Object.assign(targetFactura, {tipo:tipo, entidad:entidad, monto:monto, fechaEmision:fechaEmision, numeroFactura:numeroFactura, iva:iva, estado:(estado==="cobrada" && !yaEstabaCobrada) ? "pendiente" : estado, mesesProduccion:mesesProduccion});
 if(estado === "cobrada" && !yaEstabaCobrada){
+if(facturaAsociarMovId){
+const movAsociar = STATE.movimientos.find(function(mv){ return mv.id===facturaAsociarMovId; });
+if(movAsociar){
+targetFactura.estado = "cobrada";
+targetFactura.movimientoId = movAsociar.id;
+movAsociar.facturaRef = numeroFactura;
+overlay.classList.remove("open");
+saveAndRender();
+toast("Factura asociada al movimiento ya cargado.");
+return;
+}
+}
 overlay.classList.remove("open");
 saveState();
 openCobroModal(targetFactura.id);
@@ -2975,6 +3514,18 @@ createdAt: Date.now()
 };
 STATE.facturas.push(targetFactura);
 if(estado === "cobrada"){
+if(facturaAsociarMovId){
+const movAsociar = STATE.movimientos.find(function(mv){ return mv.id===facturaAsociarMovId; });
+if(movAsociar){
+targetFactura.estado = "cobrada";
+targetFactura.movimientoId = movAsociar.id;
+movAsociar.facturaRef = numeroFactura;
+overlay.classList.remove("open");
+saveAndRender();
+toast("Factura cargada y asociada al movimiento.");
+return;
+}
+}
 overlay.classList.remove("open");
 saveState();
 openCobroModal(targetFactura.id);
@@ -3026,8 +3577,29 @@ return STATE.movimientos.filter(function(m){ return m.tipo==="ingreso" && (m.fec
 .reduce(function(acc,m){ return acc + (Number(m.monto)||0); }, 0);
 }
 
+// Si el gasto fijo tiene un número de cuotas fijo, calcula el último mes en el que corresponde.
+function mesFinalCuotas(gf){
+if(!gf.totalCuotas || !gf.mesInicio) return null;
+const partes = gf.mesInicio.split("-").map(Number);
+const totalMeses = partes[0]*12 + (partes[1]-1) + (gf.totalCuotas-1);
+const yFin = Math.floor(totalMeses/12);
+const mFin = (totalMeses%12)+1;
+return yFin + "-" + String(mFin).padStart(2,"0");
+}
+// Qué número de cuota corresponde a un mes dado (1 = la primera).
+function numeroCuota(gf, mes){
+if(!gf.mesInicio) return null;
+const p1 = gf.mesInicio.split("-").map(Number);
+const p2 = mes.split("-").map(Number);
+return (p2[0]*12+p2[1]) - (p1[0]*12+p1[1]) + 1;
+}
+
 function gfMontoEfectivo(gf, mes){
 if(mes < gf.mesInicio) return null;
+if(gf.totalCuotas){
+const mesFin = mesFinalCuotas(gf);
+if(mesFin && mes > mesFin) return null;
+}
 const ov = STATE.gastosFijosOverrides[gf.id];
 if(ov && ov[mes] !== undefined && ov[mes] !== null) return Number(ov[mes]);
 if(gf.modoProyeccion === "porcentaje"){
@@ -3138,6 +3710,11 @@ document.getElementById("gfe-concepto").value = gf.concepto || "";
 document.getElementById("gfe-destino").value = gf.destino || "planta";
 document.getElementById("gfe-mesinicio").value = gf.mesInicio || periodoStr();
 document.getElementById("gfe-diavencimiento").value = gf.diaVencimiento || "";
+const esConCuotas = !!gf.totalCuotas;
+document.querySelectorAll("#gfe-repeticion-group label").forEach(function(l){ l.classList.toggle("checked", l.dataset.val===(esConCuotas?"cuotas":"recurrente")); });
+document.getElementById("gfe-repeticion-group").dataset.value = esConCuotas ? "cuotas" : "recurrente";
+document.getElementById("gfe-cuotas-row").style.display = esConCuotas ? "block" : "none";
+document.getElementById("gfe-totalcuotas").value = gf.totalCuotas || "";
 const esPct = gf.modoProyeccion === "porcentaje";
 document.getElementById("gfe-monto").value = esPct ? "" : (gf.monto || "");
 document.getElementById("gfe-porcentaje").value = esPct ? (gf.porcentaje || "") : "";
@@ -3154,6 +3731,13 @@ const usandoPct = montoInput.style.display === "none";
 montoInput.style.display = usandoPct ? "block" : "none";
 pctInput.style.display = usandoPct ? "none" : "block";
 this.textContent = usandoPct ? "(usar %)" : "(usar monto fijo)";
+});
+document.getElementById("gfe-repeticion-group").addEventListener("click", function(e){
+const l = e.target.closest("label");
+if(!l) return;
+this.querySelectorAll("label").forEach(function(x){ x.classList.toggle("checked", x===l); });
+this.dataset.value = l.dataset.val;
+document.getElementById("gfe-cuotas-row").style.display = l.dataset.val==="cuotas" ? "block" : "none";
 });
 function fillGfCategoriaSelectEn(selectId){
 const sel = document.getElementById(selectId);
@@ -3176,6 +3760,14 @@ gf.destino = document.getElementById("gfe-destino").value;
 gf.mesInicio = document.getElementById("gfe-mesinicio").value || gf.mesInicio;
 const diaVenc = Number(document.getElementById("gfe-diavencimiento").value);
 gf.diaVencimiento = (diaVenc>=1 && diaVenc<=31) ? diaVenc : null;
+const esConCuotas = document.getElementById("gfe-repeticion-group").dataset.value === "cuotas";
+if(esConCuotas){
+const totalCuotas = Number(document.getElementById("gfe-totalcuotas").value);
+if(!totalCuotas || totalCuotas<1){ toast("Completá la cantidad de cuotas."); return; }
+gf.totalCuotas = totalCuotas;
+} else {
+gf.totalCuotas = null;
+}
 const modoPct = document.getElementById("gfe-monto").style.display === "none";
 if(modoPct){
 gf.modoProyeccion = "porcentaje";
@@ -3303,8 +3895,9 @@ if(proy!==null) catProy += proy;
 if(real!==null){ catReal += real; catRealCount++; }
 const s = formatSaldo(proy, real, esGasto);
 const badgeVenc = gf.diaVencimiento ? (' <span title="Vence el día ' + gf.diaVencimiento + ' de cada mes" style="background:var(--brand-soft);color:var(--brand);border-radius:5px;padding:1px 5px;font-size:10px;font-weight:700;white-space:nowrap;">📅 ' + gf.diaVencimiento + '</span>') : '';
+const badgeCuota = gf.totalCuotas ? (' <span title="Cuotas fijas, se corta solo" style="background:#F0F2F7;color:#4B5871;border-radius:5px;padding:1px 5px;font-size:10px;font-weight:700;white-space:nowrap;">' + (numeroCuota(gf, mes)||1) + '/' + gf.totalCuotas + '</span>') : '';
 return '<tr class="gf-detalle-row" data-gf-cat="' + escapeHtml(toggleKey) + '" style="display:none;">' +
-'<td style="padding-left:28px;display:flex;align-items:center;gap:4px;"><input type="text" class="gf-inline-input" data-gf-rename-item="' + gf.id + '" value="' + escapeHtml(gf.concepto || gf.nombre) + '" style="flex:1;min-width:60px;">' + badgeVenc + '<button class="icon-btn" data-gf-edit="' + gf.id + '" title="Editar (incluye día de vencimiento)" style="flex-shrink:0;width:24px;height:24px;">' + ICONS.edit + '</button><button class="icon-btn danger" data-gf-del-item="' + gf.id + '" title="Borrar este renglón" style="flex-shrink:0;width:24px;height:24px;">' + ICONS.trash + '</button></td>' +
+'<td style="padding-left:28px;display:flex;align-items:center;gap:4px;"><input type="text" class="gf-inline-input" data-gf-rename-item="' + gf.id + '" value="' + escapeHtml(gf.concepto || gf.nombre) + '" style="flex:1;min-width:60px;">' + badgeVenc + badgeCuota + '<button class="icon-btn" data-gf-edit="' + gf.id + '" title="Editar (incluye día de vencimiento)" style="flex-shrink:0;width:24px;height:24px;">' + ICONS.edit + '</button><button class="icon-btn danger" data-gf-del-item="' + gf.id + '" title="Borrar este renglón" style="flex-shrink:0;width:24px;height:24px;">' + ICONS.trash + '</button></td>' +
 '<td class="mono"><div style="display:flex;align-items:center;gap:2px;"><span style="color:var(--muted);font-size:11.5px;">$</span><input type="number" class="gf-inline-input mono" data-gf-proy="' + gf.id + '|' + mes + '" value="' + (proy!==null?proy:'') + '" placeholder="—" style="' + (ov?'color:var(--sub);font-weight:700;':'') + '"></div></td>' +
 '<td class="mono" ' + (real!==null?'style="color:var(--planta);font-weight:700;"':'style="color:var(--border-strong);"') + '>' + (real!==null?('✓ '+money(real)):'—') + '</td>' +
 '<td class="mono ' + s.cls + '">' + s.text + '</td>' +
@@ -3580,11 +4173,21 @@ proyPorCategoria[cat] = (proyPorCategoria[cat]||0) + categoriaProyEfectivoParaMe
 let totalProy=0, totalFalta=0, totalSobrante=0;
 Object.keys(proyPorCategoria).forEach(function(cat){
 const proy = proyPorCategoria[cat];
-const real = STATE.movimientos.filter(function(m){ return (m.categoria||"")===cat && m.tipo==="ingreso" && (m.fecha||"").slice(0,7)===mesActual; }).reduce(function(a,m){ return a+(Number(m.monto)||0); },0);
+const real = STATE.movimientos.filter(function(m){ return (m.categoria||"")===cat && m.tipo==="ingreso" && cuentaEnCash(m) && (m.fecha||"").slice(0,7)===mesActual; }).reduce(function(a,m){ return a+(Number(m.monto)||0); },0);
 totalProy += proy;
 totalFalta += Math.max(0, proy-real);
 totalSobrante += Math.max(0, real-proy);
 });
+// Igual que en Gastos: un ingreso real en una categoría SIN nada proyectado también es "de más"
+// (cobraste algo que no estaba en el plan), no debería quedar afuera del cálculo.
+const otrosCobradosSinProyectar = STATE.movimientos.filter(function(m){
+if(m.tipo!=="ingreso") return false;
+if((m.fecha||"").slice(0,7)!==mesActual) return false;
+if(!cuentaEnCash(m)) return false;
+if(!m.categoria) return false;
+return !(m.categoria in proyPorCategoria);
+}).reduce(function(a,m){ return a+(Number(m.monto)||0); }, 0);
+totalSobrante += otrosCobradosSinProyectar;
 return {totalProy: totalProy, totalFalta: totalFalta, totalSobrante: totalSobrante};
 }
 
@@ -3608,7 +4211,7 @@ const porCategoria = {};
 let totalProy = 0, totalPagado = 0, totalFalta = 0, totalReal = 0, totalSobrante = 0, dividendosPendientes = 0;
 Object.keys(proyPorCategoria).forEach(function(cat){
 const proy = proyPorCategoria[cat];
-const real = STATE.movimientos.filter(function(m){ return (m.categoria||"")===cat && m.tipo==="egreso" && m.destino!=="ahorro" && (m.fecha||"").slice(0,7)===mesActual; }).reduce(function(a,m){ return a+(Number(m.monto)||0); },0);
+const real = STATE.movimientos.filter(function(m){ return (m.categoria||"")===cat && m.tipo==="egreso" && m.destino!=="ahorro" && cuentaEnCash(m) && (m.fecha||"").slice(0,7)===mesActual; }).reduce(function(a,m){ return a+(Number(m.monto)||0); },0);
 const pendiente = Math.max(0, proy - real);
 const esDividendos = cat.trim().toLowerCase() === "dividendos";
 if(esDividendos) dividendosPendientes += pendiente;
@@ -3652,7 +4255,7 @@ totalProy += proyDeudasAtrasadas; totalPagado += pagado; totalFalta += pendiente
 const movsSinProyectar = STATE.movimientos.filter(function(m){
 if(m.tipo!=="egreso") return false;
 if((m.fecha||"").slice(0,7)!==mesActual) return false;
-if(m.destino==="ajuste" || m.destino==="transferencia" || m.destino==="ahorro") return false;
+if(!cuentaEnCash(m) || m.destino==="ahorro") return false;
 if(!m.categoria) return false;
 return !(m.categoria in proyPorCategoria);
 });
@@ -3673,7 +4276,7 @@ function renderKpiCashflow(){
 if(!gfMesSeleccionado) gfMesSeleccionado = periodoStr();
 const mes = gfMesSeleccionado;
 const movsDelMes = STATE.movimientos.filter(function(m){ return (m.fecha||"").slice(0,7)===mes; });
-const movsOperativosDelMes = movsDelMes.filter(function(m){ return m.destino!=="ajuste" && m.destino!=="transferencia"; });
+const movsOperativosDelMes = movsDelMes.filter(cuentaEnCash);
 const ingresosReal = movsOperativosDelMes.filter(function(m){ return m.tipo==="ingreso"; }).reduce(function(a,m){ return a+(Number(m.monto)||0); },0);
 // El Ahorro (Fondo, IVA) también se excluye acá — tiene su sección aparte y no debe mezclarse con
 // "Gastos", igual criterio que ya usan el Termómetro y la grilla de Cash Flow.
@@ -3911,7 +4514,7 @@ proyDisponibleEl.innerHTML =
 // Mismo cálculo que el KPI de arriba (Neto del plan, con respaldo de ahorro genuino incluido) —
 // una sola fuente de verdad, para que el número de acá abajo sea siempre el mismo que el de arriba.
 const movsDelMesRF = STATE.movimientos.filter(function(m){ return (m.fecha||"").slice(0,7)===mes; });
-const movsOperativosRF = movsDelMesRF.filter(function(m){ return m.destino!=="ajuste" && m.destino!=="transferencia"; });
+const movsOperativosRF = movsDelMesRF.filter(cuentaEnCash);
 const ingresosRealRF = movsOperativosRF.filter(function(m){ return m.tipo==="ingreso"; }).reduce(function(a,m){ return a+(Number(m.monto)||0); },0);
 const gastosRealRF = movsOperativosRF.filter(function(m){ return m.tipo==="egreso" && m.destino!=="ahorro"; }).reduce(function(a,m){ return a+(Number(m.monto)||0); },0);
 const ahorroGenuinoRF = movsOperativosRF.filter(function(m){ return m.tipo==="egreso" && m.destino==="ahorro" && !m.esPagoIva; }).reduce(function(a,m){ return a+(Number(m.monto)||0); },0);
@@ -4216,7 +4819,83 @@ const diff = Math.floor((d1 - d0) / 86400000);
 return diff >= 0 ? diff : 0;
 }
 
+let movSinFacturaAbiertas = {ingreso:false, egreso:false};
+// Solo clientes y proveedores de verdad — Planta Propia, Subcontratados, Ambos o todavía Sin
+// Clasificar. Retiros, Ahorro, Aportes de Socios, Ajustes de Saldo y Transferencias entre cuentas
+// propias nunca tienen una factura real detrás, no tiene sentido mostrarlas acá.
+const DESTINOS_CON_FACTURA = {planta:true, subcontratado:true, ambos:true, sin_clasificar:true};
+// Además del destino, hay categorías que NUNCA son clientes/proveedores aunque queden con destino
+// Planta/Sub por algún motivo (ej. un Aporte de socio cargado así) — se filtran por nombre también.
+const CATEGORIAS_SIN_FACTURA = {"Aportes":true,"Aporte de Socios":true,"Dividendos":true,"Ahorro IVa":true,"Fondo":true,"Ajustes de Saldo":true,"Transferencia entre Cuentas":true,"Pago a Yoel (a facturar)":true,"Suscripción":true,"Rescate":true,"Suscripción IVA":true,"Suscripción Inversión":true,"Rescate IVA":true,"Rescate Inversión":true};
+let egresosSoloProveedores = true;
+function renderMovsSinFactura(){
+const cont = document.getElementById("mov-sin-factura-secciones");
+if(!cont) return;
+const facturaMovIds = {};
+STATE.facturas.forEach(function(f){ if(f.movimientoId) facturaMovIds[f.movimientoId] = true; });
+const sinFactura = STATE.movimientos.filter(function(m){
+if(facturaMovIds[m.id]) return false;
+if(m.facturaRef && m.facturaRef.trim()) return false;
+if(!DESTINOS_CON_FACTURA[m.destino] || m.transferenciaId) return false;
+if(CATEGORIAS_SIN_FACTURA[m.categoria]) return false;
+return true;
+});
+const secciones = [
+{key:"ingreso", titulo:"Ingresos sin factura", color:"var(--planta)"},
+{key:"egreso", titulo:"Egresos sin factura", color:"var(--danger)"}
+];
+cont.innerHTML = secciones.map(function(sec){
+let movs = sinFactura.filter(function(m){ return m.tipo===sec.key; });
+if(sec.key==="egreso" && egresosSoloProveedores) movs = movs.filter(function(m){ return m.categoria==="Proveedores"; });
+movs.sort(function(a,b){ return (b.fecha||"").localeCompare(a.fecha||""); });
+const conIva = movs.filter(function(m){ return m.iva && m.iva!=="0"; }).length;
+const abierto = !!movSinFacturaAbiertas[sec.key];
+const checkProveedores = sec.key==="egreso"
+? ('<label style="display:flex;align-items:center;gap:5px;font-size:11.5px;font-weight:400;color:var(--muted);cursor:pointer;" onclick="event.stopPropagation();">' +
+'<input type="checkbox" id="chk-egresos-solo-prov" ' + (egresosSoloProveedores?'checked':'') + ' style="cursor:pointer;"> Solo categoría "Proveedores"</label>')
+: '';
+const filas = !movs.length
+? '<tr><td colspan="7" style="color:var(--muted);font-style:italic;">Ninguno.</td></tr>'
+: movs.map(function(m){
+const tieneIva = m.iva && m.iva!=="0";
+return '<tr>' +
+'<td class="mono" style="color:var(--muted);font-weight:600;">' + idMovimientoDisplay(m) + '</td>' +
+'<td>' + fmtDate(m.fecha) + '</td>' +
+'<td>' + escapeHtml(m.cuenta||"—") + '</td>' +
+'<td>' + escapeHtml(m.entidad||"—") + (m.categoria?(' <span style="color:var(--muted);font-size:11px;">· '+escapeHtml(m.categoria)+'</span>'):'') + '</td>' +
+'<td class="mono">' + money(m.monto) + '</td>' +
+'<td>' + (tieneIva ? ('<span class="badge" style="background:var(--sub-soft);color:var(--sub);">IVA '+escapeHtml(m.iva)+'%</span>') : '<span style="color:var(--muted);">—</span>') + '</td>' +
+'<td><button class="btn btn-primary" style="padding:5px 10px;font-size:12px;" data-crear-factura-de="' + m.id + '">+ Crear factura</button></td>' +
+'</tr>';
+}).join("");
+return '<div style="border:1px solid var(--border);border-radius:10px;margin-bottom:10px;overflow:hidden;">' +
+'<div data-toggle-sin-factura="' + sec.key + '" style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;cursor:pointer;background:var(--surface-2);">' +
+'<div style="font-weight:700;">' + (abierto?'▾':'▸') + ' ' + sec.titulo + ' <span style="color:var(--muted);font-weight:400;">(' + movs.length + (conIva>0?(', '+conIva+' con IVA'):'') + ')</span></div>' +
+checkProveedores +
+'</div>' +
+(abierto ? ('<table style="margin:0;"><thead><tr><th>N°</th><th>Fecha</th><th>Cuenta</th><th>Entidad</th><th class="mono">Monto</th><th>IVA</th><th></th></tr></thead><tbody>' + filas + '</tbody></table>') : '') +
+'</div>';
+}).join("");
+}
+document.getElementById("mov-sin-factura-secciones") && document.getElementById("mov-sin-factura-secciones").addEventListener("click", function(e){
+const btn = e.target.closest("[data-crear-factura-de]");
+if(btn){ abrirFacturaDesdeMovimiento(btn.dataset.crearFacturaDe); return; }
+const toggle = e.target.closest("[data-toggle-sin-factura]");
+if(toggle){
+const key = toggle.dataset.toggleSinFactura;
+movSinFacturaAbiertas[key] = !movSinFacturaAbiertas[key];
+renderMovsSinFactura();
+}
+});
+document.getElementById("mov-sin-factura-secciones") && document.getElementById("mov-sin-factura-secciones").addEventListener("change", function(e){
+if(e.target.id === "chk-egresos-solo-prov"){
+egresosSoloProveedores = e.target.checked;
+renderMovsSinFactura();
+}
+});
+
 function renderFacturasTables(){
+renderMovsSinFactura();
 const cobrar = STATE.facturas.filter(function(f){ return f.tipo==="emitida"; });
 const pagar = STATE.facturas.filter(function(f){ return f.tipo==="recibida"; });
 
@@ -4384,7 +5063,7 @@ const msg = tieneMovimiento
 const ok = await confirmDialog(msg, "Borrar");
 if(ok){
 if(tieneMovimiento){
-STATE.movimientos = STATE.movimientos.filter(function(m){ return m.id!==deuda.movimientoId; });
+moverAPapelera([deuda.movimientoId]);
 }
 STATE.otrasDeudas = STATE.otrasDeudas.filter(function(d){ return d.id!==delBtn.dataset.odDel; });
 saveAndRender();
@@ -4427,7 +5106,12 @@ function getCuentasResumen(){
 return STATE.cuentas.map(function(c){
 const movs = STATE.movimientos.filter(function(m){ return m.cuenta===c; });
 const n = netOf(movs);
-return {nombre: c, ingreso: n.ingreso, egreso: n.egreso, movCount: movs.length, factCount: 0};
+// Disponible real = saldo bancario (ya neto de retenciones: Ganancias, IIBB, Imp. Déb/Créd — esa
+// plata nunca llegó a la cuenta) menos lo ya apartado en Ahorro/IVA — mismo criterio que el panel
+// de Saldos por Cuenta, para que coincidan.
+const ahorroCuenta = netOf(movs.filter(function(m){ return m.destino==="ahorro"; })).neto;
+const saldoLibre = n.neto - Math.max(0, ahorroCuenta);
+return {nombre: c, ingreso: n.ingreso, egreso: n.egreso, movCount: movs.length, factCount: 0, saldoLibre: saldoLibre, ahorroApartado: Math.max(0, ahorroCuenta)};
 });
 }
 
@@ -4448,24 +5132,32 @@ const t = e.target.closest(".modal-tab");
 if(!t) return;
 mayorModo = t.dataset.modo;
 document.querySelectorAll("#mayores-modo-tabs .modal-tab").forEach(function(b){ b.classList.toggle("active", b===t); });
-const titulos = {cuenta:"Cuentas", categoria:"Categorías"};
-const placeholders = {cuenta:"Buscar cuenta…", categoria:"Buscar categoría…"};
+mayoresFiltro = "";
+document.getElementById("mayores-cuentas-sidebar-buscar").value = "";
+document.getElementById("mayores-categorias-sidebar-buscar").value = "";
 if(mayorModo==="historico"){
 document.getElementById("mayores-layout-normal").style.display = "none";
 document.getElementById("mayores-historico-panel").style.display = "block";
+document.getElementById("mayores-cuentas-sidebar").style.display = "none";
+document.getElementById("mayores-categorias-sidebar").style.display = "none";
 } else {
 document.getElementById("mayores-layout-normal").style.display = "flex";
 document.getElementById("mayores-historico-panel").style.display = "none";
-document.getElementById("mayores-list-title").textContent = titulos[mayorModo];
-document.getElementById("mayores-buscar").placeholder = placeholders[mayorModo];
 }
 mayorSelected = null;
 renderMayores();
 });
 
 function renderMayoresList(){
-const list = document.getElementById("mayores-list");
-let items = mayorModo==="cuenta" ? getCuentasResumen() : getCategoriasResumen();
+const esModoCuenta = mayorModo==="cuenta";
+const esModoCategoria = mayorModo==="categoria";
+const vistaMayoresActiva = !!(document.getElementById("view-mayores") && document.getElementById("view-mayores").classList.contains("active"));
+const list = document.getElementById(esModoCuenta ? "mayores-cuentas-sidebar-list" : "mayores-categorias-sidebar-list");
+// El panel izquierdo ya no se usa — tanto Cuentas como Categorías eligen desde el sidebar derecho.
+document.querySelector(".mayores-list-panel").style.display = "none";
+document.getElementById("mayores-cuentas-sidebar").style.display = (esModoCuenta && vistaMayoresActiva) ? "block" : "none";
+document.getElementById("mayores-categorias-sidebar").style.display = (esModoCategoria && vistaMayoresActiva) ? "block" : "none";
+let items = esModoCuenta ? getCuentasResumen() : getCategoriasResumen();
 if(mayoresFiltro.trim()){
 const f = mayoresFiltro.trim().toLowerCase();
 items = items.filter(function(e){ return e.nombre.toLowerCase().indexOf(f)!==-1; });
@@ -4475,10 +5167,10 @@ list.innerHTML = '<div class="empty-col">' + (mayoresFiltro?'Sin resultados.':'T
 return;
 }
 list.innerHTML = items.map(function(e){
-const neto = e.ingreso - e.egreso;
+const neto = (e.saldoLibre !== undefined) ? e.saldoLibre : (e.ingreso - e.egreso);
 const key = e.nombre.trim().toLowerCase();
 const activeClass = (mayorSelected === key) ? " active" : "";
-const subLabel = e.movCount + ' mov.';
+const subLabel = e.movCount + ' mov.' + (e.ahorroApartado>0 ? (' · <span style="color:var(--sub);">apartado: '+money(e.ahorroApartado)+'</span>') : '');
 return '<div class="mayor-item' + activeClass + '" data-key="' + escapeHtml(key) + '">' +
 '<div><div class="nom">' + escapeHtml(e.nombre) + '</div><div class="sub">' + subLabel + '</div></div>' +
 '<div class="net ' + (neto>=0?'pos':'neg') + '">' + money(neto) + '</div>' +
@@ -4512,6 +5204,23 @@ nombreReal = (movs[0] && movs[0].categoria) || STATE.categorias.find(function(c)
 title.textContent = nombreReal;
 document.getElementById("mayor-detalle-acciones").innerHTML = "";
 
+// Saldo acumulado tipo extracto bancario — solo tiene sentido por Cuenta (por Categoría los
+// movimientos vienen de cuentas distintas, sumarlos así no representaría ningún saldo real).
+const saldoAcumuladoPorId = {};
+if(mayorModo==="cuenta"){
+const movsCron = movs.slice().sort(function(a,b){
+const fa = a.fecha||"", fb = b.fecha||"";
+if(fa!==fb) return fa<fb ? -1 : 1;
+return (a.createdAt||0) - (b.createdAt||0);
+});
+let acumulado = 0;
+movsCron.forEach(function(m){
+const efectivo = (m.tipo==="ingreso" ? 1 : -1) * (Number(m.monto)||0) - impDebCredEfectivo(m) - gananciasEfectivo(m) - iibbEfectivo(m) - otrosEfectivo(m);
+acumulado += efectivo;
+saldoAcumuladoPorId[m.id] = acumulado;
+});
+}
+
 const movsAjuste = movs.filter(function(m){ return m.destino==="ajuste" || m.destino==="transferencia"; });
 const movsOperativos = movs.filter(function(m){ return m.destino!=="ajuste" && m.destino!=="transferencia"; });
 const netoAjustes = movsAjuste.reduce(function(acc,m){ return acc + (m.tipo==="ingreso"?1:-1)*(Number(m.monto)||0); }, 0);
@@ -4523,6 +5232,7 @@ const posicionIvaM = ivaDebitoM - ivaCreditoM;
 const impEfectivoTotal = movsOperativos.reduce(function(acc,m){ return acc+impDebCredEfectivo(m); },0);
 const ganEfectivoTotal = movsOperativos.reduce(function(acc,m){ return acc+gananciasEfectivo(m); },0);
 const iibbTotal = movsOperativos.reduce(function(acc,m){ return acc+iibbEfectivo(m); },0);
+const otrosTotal = movsOperativos.reduce(function(acc,m){ return acc+otrosEfectivo(m); },0);
 const facturasPendientes = facts.filter(function(f){ return f.estado!=="cobrada"; })
 .reduce(function(acc,f){ return acc + (Number(f.monto)||0); }, 0);
 const deudasPendientes = deudas.filter(function(d){ return d.estado!=="cobrada"; })
@@ -4538,10 +5248,10 @@ resumen.innerHTML =
 '<div class="mayor-resumen-chip"><div class="lbl">Imp. Déb/Créd (0,6%)</div><div class="val neg">-' + money(impEfectivoTotal) + '</div></div>' +
 '<div class="mayor-resumen-chip"><div class="lbl">Ret. Ganancias (0,8%)</div><div class="val neg">-' + money(ganEfectivoTotal) + '</div></div>' +
 '<div class="mayor-resumen-chip"><div class="lbl">IIBB</div><div class="val neg">' + (iibbTotal>0?('-'+money(iibbTotal)):'—') + '</div></div>' +
+(otrosTotal>0 ? ('<div class="mayor-resumen-chip"><div class="lbl">Otras Retenciones</div><div class="val neg">-' + money(otrosTotal) + '</div></div>') : '') +
 '<div class="mayor-resumen-chip"><div class="lbl">IVA Débito</div><div class="val pos">' + money(ivaDebitoM) + '</div></div>' +
 '<div class="mayor-resumen-chip"><div class="lbl">IVA Crédito</div><div class="val neg">' + money(ivaCreditoM) + '</div></div>' +
 '<div class="mayor-resumen-chip"><div class="lbl">Posición IVA</div><div class="val ' + (posicionIvaM>=0?'neg':'pos') + '">' + money(posicionIvaM) + '</div></div>' +
-'<div class="mayor-resumen-chip"><div class="lbl">Neto</div><div class="val ' + (n.neto>=0?'pos':'neg') + '">' + money(n.neto) + '</div></div>' +
 '</div>';
 
 const facturaPorMovId = {};
@@ -4579,7 +5289,7 @@ const filtroFacturado = document.getElementById("mayor-detalle-facturado-filtro"
 if(filtroTexto){
 eventos = eventos.filter(function(ev){
 const d = ev.data;
-const campos = [d.entidad, d.categoria, d.subconcepto, d.numeroFactura, d.cuenta].filter(Boolean).join(" ").toLowerCase();
+const campos = [d.entidad, d.categoria, d.subconcepto, d.numeroFactura, d.cuenta, idMovimientoDisplay(d)].filter(Boolean).join(" ").toLowerCase();
 return campos.indexOf(filtroTexto) !== -1;
 });
 }
@@ -4593,7 +5303,9 @@ return;
 
 const destinoLabel = {planta:"Planta Propia", subcontratado:"Subcontratados", ambos:"Ambos (Planta+Sub)", retiro:"Retiro", ahorro:"Ahorro", sin_clasificar:"Sin clasificar", ajuste:"Ajuste de Saldo", transferencia:"Transferencia", aporte:"Aporte de Socios"};
 const colEntidadCuenta = "Entidad";
-body.innerHTML = '<table><thead><tr><th>Fecha</th><th>Tipo</th><th>' + colEntidadCuenta + '</th><th>Detalle</th><th class="mono">Monto</th><th class="mono">IVA</th><th class="mono">Imp. 0,6%</th><th class="mono">Ganancias</th><th class="mono">IIBB</th><th>Facturado</th><th>Estado / Destino</th></tr></thead><tbody>' +
+const colsConciliacion = '<th>Estado</th>';
+const colSaldo = mayorModo==="cuenta" ? '<th class="mono">Saldo</th>' : '';
+body.innerHTML = '<table><thead><tr><th>N°</th><th>Fecha</th><th>Tipo</th><th>' + colEntidadCuenta + '</th><th>Detalle</th><th class="mono">Monto</th>' + colSaldo + '<th class="mono">IVA</th><th class="mono">Imp. 0,6%</th><th class="mono">Ganancias</th><th class="mono">IIBB</th><th class="mono">Otros</th><th>Facturado</th>' + colsConciliacion + '<th>En Cash</th><th>Estado / Destino</th><th>Acciones</th></tr></thead><tbody>' +
 eventos.map(function(ev){
 if(ev.tipo==="movimiento"){
 const m = ev.data;
@@ -4601,6 +5313,7 @@ const impM = impDebCredEfectivo(m);
 const ganM = gananciasEfectivo(m);
 const ivaM = ivaEfectivo(m);
 const iibbM = iibbEfectivo(m);
+const otrosM = otrosEfectivo(m);
 const factVinculada = facturaPorMovId[m.id];
 let facturadoCell = '<span style="color:var(--muted);">—</span>';
 if(m.tipo==="ingreso"){
@@ -4611,18 +5324,30 @@ facturadoCell = numeros.length
 ? ('<span class="badge badge-cob" title="' + escapeHtml(factVinculada?(factVinculada.entidad||''):'') + '">✓ N° ' + numeros.map(escapeHtml).join(" / ") + '</span>')
 : '<span style="color:var(--muted);font-size:11.5px;">Sin factura</span>';
 }
-return '<tr>' +
+const colsConciliacionCelda =
+'<td style="text-align:center;white-space:nowrap;padding:4px 6px;">' +
+'<button data-mayor-conciliada="' + m.id + '" title="Marcar como conciliada" style="border:none;background:' + (m.conciliada?'var(--planta)':'var(--surface-2)') + ';color:' + (m.conciliada?'#fff':'var(--muted)') + ';border-radius:5px;width:22px;height:22px;cursor:pointer;font-size:11px;">✓</button> ' +
+'<button data-mayor-con-error="' + m.id + '" title="Marcar con error" style="border:none;background:' + (m.conError?'#D9A400':'var(--surface-2)') + ';color:' + (m.conError?'#fff':'var(--muted)') + ';border-radius:5px;width:22px;height:22px;cursor:pointer;font-size:11px;">⚠</button>' +
+'</td>';
+const filaBg = m.conError ? 'background:#FFF6D6;' : (m.conciliada ? 'background:#E3F6E9;' : '');
+return '<tr style="' + filaBg + '">' +
+'<td class="mono" style="color:var(--muted);font-weight:600;">' + idMovimientoDisplay(m) + '</td>' +
 '<td>' + fmtDate(m.fecha) + '</td>' +
 '<td>Movimiento</td>' +
 '<td>' + escapeHtml(m.entidad||"—") + '</td>' +
 '<td>' + (m.subconcepto?escapeHtml(m.subconcepto):'') + (m.categoria?(' · '+escapeHtml(m.categoria)):'') + '</td>' +
 '<td class="mono ' + (m.tipo==='ingreso'?'pos':'neg') + '">' + (m.tipo==='ingreso'?'+':'−') + money(m.monto) + '</td>' +
+(mayorModo==="cuenta" ? ('<td class="mono" style="font-weight:600;">' + money(saldoAcumuladoPorId[m.id]||0) + '</td>') : '') +
 '<td class="mono ' + (ivaM>0?(m.tipo==='ingreso'?'pos':'neg'):'') + '" style="' + (ivaM===0?'color:var(--muted);':'') + '">' + (ivaM>0?money(ivaM):'—') + '</td>' +
 '<td class="mono ' + (impM>0?'neg':'') + '" style="' + (impM===0?'color:var(--muted);':'') + '">' + (impM>0?('-'+money(impM)):'—') + '</td>' +
 '<td class="mono ' + (ganM>0?'neg':'') + '" style="' + (ganM===0?'color:var(--muted);':'') + '">' + (ganM>0?('-'+money(ganM)):'—') + '</td>' +
 '<td class="mono ' + (iibbM>0?'neg':'') + '" style="' + (iibbM===0?'color:var(--muted);':'') + '">' + (iibbM>0?('-'+money(iibbM)):'—') + '</td>' +
+'<td class="mono ' + (otrosM>0?'neg':'') + '" style="' + (otrosM===0?'color:var(--muted);':'') + '">' + (otrosM>0?('-'+money(otrosM)):'—') + '</td>' +
 '<td>' + facturadoCell + '</td>' +
-'<td>' + ((m.destino==="transferencia"||m.destino==="aporte"||m.requiereFacturaYoel) && m.cuentaOrigen ? ('↔ ' + escapeHtml(m.cuentaOrigen||'') + ' → ' + escapeHtml(m.cuentaDestino||'') + (m.requiereFacturaYoel?' <span class="badge badge-pend">Yoel debe facturar</span>':'') + (m.esAporteSocios?' <span class="badge" style="background:var(--brand-soft);color:var(--brand);">Aporte</span>':'')) : (destinoLabel[m.destino]||m.destino)) + '</td>' +
+colsConciliacionCelda +
+'<td style="text-align:center;"><input type="checkbox" data-en-cash="' + m.id + '"' + (cuentaEnCash(m)?' checked':'') + ' title="¿Este movimiento cuenta en Ingresos/Gastos del Cash Flow?"></td>' +
+'<td>' + ((m.transferenciaId||m.destino==="transferencia"||m.destino==="aporte"||m.requiereFacturaYoel) && m.cuentaOrigen ? ('↔ ' + escapeHtml(m.cuentaOrigen||'') + ' → ' + escapeHtml(m.cuentaDestino||'') + ((m.requiereFacturaYoel && CUENTAS_YOEL_MIG.indexOf(m.cuenta)!==-1)?' <span class="badge badge-pend">Yoel debe facturar</span>':'') + (m.esAporteSocios?' <span class="badge" style="background:var(--brand-soft);color:var(--brand);">Aporte</span>':'')) : (destinoLabel[m.destino]||m.destino)) + '</td>' +
+'<td class="row-acts" style="white-space:nowrap;">' + (!m.transferenciaId ? ('<button class="icon-btn" data-vincular-mov="' + m.id + '" title="Vincular con otro movimiento como transferencia">🔗</button> ') : '') + '<button class="icon-btn" data-mayor-editar="' + m.id + '" title="Editar">' + ICONS.edit + '</button> <button class="icon-btn danger" data-mayor-borrar="' + m.id + '" title="Borrar">' + ICONS.trash + '</button></td>' +
 '</tr>';
 } else if(ev.tipo==="factura"){
 const f = ev.data;
@@ -4705,7 +5430,7 @@ html += '<div class="hist-mes-header" data-hist-toggle-mes="' + mes + '" style="
 '<span>Neto: <strong class="mono ' + (n.neto>=0?'pos':'neg') + '">' + money(n.neto) + '</strong></span>' +
 '</div></div>';
 if(abierto){
-html += '<div style="margin-bottom:16px;overflow-x:auto;"><table><thead><tr><th>Fecha</th><th>Tipo</th><th>Entidad</th><th>Categoría</th><th>Cuenta</th><th class="mono">Monto</th><th>Facturado</th><th>Destino</th><th></th></tr></thead><tbody>';
+html += '<div style="margin-bottom:16px;overflow-x:auto;"><table><thead><tr><th>N°</th><th>Fecha</th><th>Tipo</th><th>Entidad</th><th>Categoría</th><th>Cuenta</th><th class="mono">Monto</th><th>Facturado</th><th>Estado</th><th>Destino</th><th></th></tr></thead><tbody>';
 movs.forEach(function(m){
 const sinCat = !m.categoria;
 const sinDestino = m.destino==="sin_clasificar";
@@ -4717,7 +5442,7 @@ const destinoCell = sinDestino
 '<button data-hist-clasif="' + m.id + '|ambos" style="font-size:10.5px;padding:2px 6px;border-radius:5px;border:1px solid var(--brand-line);background:var(--brand-soft);color:var(--brand);cursor:pointer;">Ambos</button>' +
 '<button data-hist-clasif="' + m.id + '|retiro" style="font-size:10.5px;padding:2px 6px;border-radius:5px;border:1px solid var(--border-strong);background:var(--surface-2);color:var(--text-soft);cursor:pointer;">Retiro</button>' +
 '</span>'
-: ((m.destino==="transferencia"||m.destino==="aporte"||m.requiereFacturaYoel) && m.cuentaOrigen ? ('↔ ' + escapeHtml(m.cuentaOrigen||'') + ' → ' + escapeHtml(m.cuentaDestino||'') + (m.requiereFacturaYoel?' <span class="badge badge-pend">Yoel debe facturar</span>':'') + (m.esAporteSocios?' <span class="badge" style="background:var(--brand-soft);color:var(--brand);">Aporte</span>':'')) : (destinoLabel[m.destino]||m.destino));
+: ((m.transferenciaId||m.destino==="transferencia"||m.destino==="aporte"||m.requiereFacturaYoel) && m.cuentaOrigen ? ('↔ ' + escapeHtml(m.cuentaOrigen||'') + ' → ' + escapeHtml(m.cuentaDestino||'') + ((m.requiereFacturaYoel && CUENTAS_YOEL_MIG.indexOf(m.cuenta)!==-1)?' <span class="badge badge-pend">Yoel debe facturar</span>':'') + (m.esAporteSocios?' <span class="badge" style="background:var(--brand-soft);color:var(--brand);">Aporte</span>':'')) : (destinoLabel[m.destino]||m.destino));
 const factVinculadaHist = facturaPorMovIdHist[m.id];
 let facturadoCellHist = '<span style="color:var(--muted);">—</span>';
 if(m.tipo==="ingreso"){
@@ -4728,7 +5453,12 @@ facturadoCellHist = numerosHist.length
 ? ('<span class="badge badge-cob">✓ N° ' + numerosHist.map(escapeHtml).join(" / ") + '</span>')
 : '<span style="color:var(--muted);font-size:11px;">Sin factura</span>';
 }
-html += '<tr' + ((sinCat||sinDestino) ? ' style="background:var(--sub-soft);"' : '') + '>' +
+const conciliacionCellHist =
+'<button data-mayor-conciliada="' + m.id + '" title="Marcar como conciliada" style="border:none;background:' + (m.conciliada?'var(--planta)':'var(--surface-2)') + ';color:' + (m.conciliada?'#fff':'var(--muted)') + ';border-radius:5px;width:22px;height:22px;cursor:pointer;font-size:11px;">✓</button> ' +
+'<button data-mayor-con-error="' + m.id + '" title="Marcar con error" style="border:none;background:' + (m.conError?'#D9A400':'var(--surface-2)') + ';color:' + (m.conError?'#fff':'var(--muted)') + ';border-radius:5px;width:22px;height:22px;cursor:pointer;font-size:11px;">⚠</button>';
+const filaBgHist = m.conError ? 'background:#FFF6D6;' : (m.conciliada ? 'background:#E3F6E9;' : ((sinCat||sinDestino) ? 'background:var(--sub-soft);' : ''));
+html += '<tr style="' + filaBgHist + '">' +
+'<td class="mono" style="color:var(--muted);font-weight:600;">' + idMovimientoDisplay(m) + '</td>' +
 '<td>' + fmtDate(m.fecha) + '</td>' +
 '<td>' + (m.tipo==='ingreso'?'<span class="pos">↑ Ingreso</span>':'<span class="neg">↓ Egreso</span>') + '</td>' +
 '<td>' + escapeHtml(m.entidad||"—") + '</td>' +
@@ -4736,6 +5466,7 @@ html += '<tr' + ((sinCat||sinDestino) ? ' style="background:var(--sub-soft);"' :
 '<td>' + escapeHtml(m.cuenta||"—") + '</td>' +
 '<td class="mono">' + money(m.monto) + '</td>' +
 '<td>' + facturadoCellHist + '</td>' +
+'<td style="white-space:nowrap;">' + conciliacionCellHist + '</td>' +
 '<td>' + destinoCell + '</td>' +
 '<td class="row-acts"><button class="icon-btn" data-hist-editar="' + m.id + '" title="Editar">' + ICONS.edit + '</button> <button class="icon-btn danger" data-hist-borrar="' + m.id + '" title="Borrar">' + ICONS.trash + '</button></td>' +
 '</tr>';
@@ -4764,16 +5495,66 @@ const editar = e.target.closest("[data-hist-editar]");
 if(editar){ openEditModal(editar.dataset.histEditar); return; }
 const borrar = e.target.closest("[data-hist-borrar]");
 if(borrar){ await borrarMovimiento(borrar.dataset.histBorrar); return; }
+const btnConciliada = e.target.closest("[data-mayor-conciliada]");
+if(btnConciliada){
+const m = STATE.movimientos.find(function(x){ return x.id===btnConciliada.dataset.mayorConciliada; });
+if(m){ m.conciliada = !m.conciliada; if(m.conciliada) m.conError = false; saveAndRender(); }
+return;
+}
+const btnError = e.target.closest("[data-mayor-con-error]");
+if(btnError){
+const m = STATE.movimientos.find(function(x){ return x.id===btnError.dataset.mayorConError; });
+if(m){ m.conError = !m.conError; if(m.conError) m.conciliada = false; saveAndRender(); }
+return;
+}
 });
 
 function renderMayores(){
 if(mayorModo==="historico"){
 renderMayoresHistorico();
-return;
-}
+} else {
 renderMayoresList();
 renderMayorDetalle();
 }
+const contador = document.getElementById("papelera-contador");
+if(contador){
+const n = (STATE.papelera||[]).length;
+contador.textContent = n>0 ? ("(" + n + ")") : "";
+}
+}
+
+function renderPapelera(){
+const lista = document.getElementById("papelera-lista");
+const items = (STATE.papelera||[]).slice().sort(function(a,b){ return (b.borradoEn||0) - (a.borradoEn||0); });
+if(!items.length){
+lista.innerHTML = '<div class="empty-col">La papelera está vacía.</div>';
+return;
+}
+lista.innerHTML = items.map(function(m){
+const diasRestantes = Math.max(0, DIAS_PAPELERA - Math.floor((Date.now() - (m.borradoEn||0)) / (24*60*60*1000)));
+return '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--border);">' +
+'<div style="min-width:0;">' +
+'<div style="font-weight:600;">' + escapeHtml(m.entidad||"—") + ' <span class="mono" style="color:var(--muted);font-weight:400;">' + (m.tipo==='ingreso'?'+':'−') + money(m.monto) + '</span></div>' +
+'<div style="font-size:11.5px;color:var(--muted);">' + fmtDate(m.fecha) + ' · ' + escapeHtml(m.cuenta||'') + (m.categoria?(' · '+escapeHtml(m.categoria)):'') + ' · se borra para siempre en ' + diasRestantes + ' días</div>' +
+'</div>' +
+'<button class="btn btn-primary" style="flex-shrink:0;padding:6px 12px;font-size:12.5px;" data-papelera-restaurar="' + m.id + '">Restaurar</button>' +
+'</div>';
+}).join("");
+}
+document.getElementById("link-papelera").addEventListener("click", function(e){
+e.preventDefault();
+renderPapelera();
+document.getElementById("modal-papelera-overlay").classList.add("open");
+});
+document.getElementById("btn-papelera-cerrar").addEventListener("click", function(){
+document.getElementById("modal-papelera-overlay").classList.remove("open");
+});
+document.getElementById("papelera-lista").addEventListener("click", function(e){
+const btn = e.target.closest("[data-papelera-restaurar]");
+if(!btn) return;
+restaurarDePapelera(btn.dataset.papeleraRestaurar);
+renderPapelera();
+});
 
 document.getElementById("mayores-list").addEventListener("click", function(e){
 const item = e.target.closest(".mayor-item");
@@ -4784,6 +5565,144 @@ renderMayores();
 document.getElementById("mayores-buscar").addEventListener("input", function(e){
 mayoresFiltro = e.target.value;
 renderMayoresList();
+});
+document.getElementById("mayores-cuentas-sidebar-list").addEventListener("click", function(e){
+const item = e.target.closest(".mayor-item");
+if(!item) return;
+mayorSelected = item.dataset.key;
+renderMayores();
+});
+document.getElementById("mayores-cuentas-sidebar-buscar").addEventListener("input", function(e){
+mayoresFiltro = e.target.value;
+renderMayoresList();
+});
+document.getElementById("mayores-categorias-sidebar-list").addEventListener("click", function(e){
+const item = e.target.closest(".mayor-item");
+if(!item) return;
+mayorSelected = item.dataset.key;
+renderMayores();
+});
+document.getElementById("mayores-categorias-sidebar-buscar").addEventListener("input", function(e){
+mayoresFiltro = e.target.value;
+renderMayoresList();
+});
+let vincularOrigenId = null;
+document.getElementById("mayor-detalle-body").addEventListener("change", function(e){
+const chk = e.target.closest("[data-en-cash]");
+if(!chk) return;
+const m = STATE.movimientos.find(function(x){ return x.id===chk.dataset.enCash; });
+if(m){
+m.incluirEnCash = chk.checked;
+saveAndRender();
+}
+});
+document.getElementById("mayor-detalle-body").addEventListener("click", function(e){
+const btnConciliada = e.target.closest("[data-mayor-conciliada]");
+if(btnConciliada){
+const m = STATE.movimientos.find(function(x){ return x.id===btnConciliada.dataset.mayorConciliada; });
+if(m){
+m.conciliada = !m.conciliada;
+if(m.conciliada) m.conError = false;
+saveAndRender();
+}
+return;
+}
+const btnError = e.target.closest("[data-mayor-con-error]");
+if(btnError){
+const m = STATE.movimientos.find(function(x){ return x.id===btnError.dataset.mayorConError; });
+if(m){
+m.conError = !m.conError;
+if(m.conError) m.conciliada = false;
+saveAndRender();
+}
+return;
+}
+const btnEditar = e.target.closest("[data-mayor-editar]");
+if(btnEditar){ openEditModal(btnEditar.dataset.mayorEditar); return; }
+const btnBorrar = e.target.closest("[data-mayor-borrar]");
+if(btnBorrar){
+if(confirm("¿Borrar este movimiento? No se puede deshacer.")){
+moverAPapelera([btnBorrar.dataset.mayorBorrar]);
+saveAndRender();
+}
+return;
+}
+const btn = e.target.closest("[data-vincular-mov]");
+if(!btn) return;
+vincularOrigenId = btn.dataset.vincularMov;
+abrirModalVincular(vincularOrigenId);
+});
+function abrirModalVincular(origenId){
+const origen = STATE.movimientos.find(function(x){ return x.id===origenId; });
+if(!origen) return;
+document.getElementById("vincular-origen-resumen").innerHTML =
+'<strong>' + (origen.tipo==='ingreso'?'Ingreso':'Egreso') + ':</strong> ' + escapeHtml(origen.entidad||'—') + ' — ' + money(origen.monto) + ' — ' + fmtDate(origen.fecha) + ' — <span class="mono">' + escapeHtml(origen.cuenta) + '</span>' +
+'<div style="margin-top:4px;color:var(--muted);">Buscá el ' + (origen.tipo==='ingreso'?'egreso':'ingreso') + ' que le corresponde del otro lado.</div>';
+document.getElementById("vincular-buscar").value = "";
+renderResultadosVincular(origen, "");
+document.getElementById("modal-vincular-overlay").classList.add("open");
+document.getElementById("vincular-buscar").focus();
+}
+function renderResultadosVincular(origen, filtro){
+const tipoOpuesto = origen.tipo==="ingreso" ? "egreso" : "ingreso";
+const f = filtro.trim().toLowerCase();
+let candidatos = STATE.movimientos.filter(function(m){
+if(m.id===origen.id) return false;
+if(m.tipo!==tipoOpuesto) return false;
+if(m.transferenciaId) return false;
+return true;
+});
+if(f){
+candidatos = candidatos.filter(function(m){
+const campos = [m.entidad, m.cuenta, m.categoria, String(m.monto)].filter(Boolean).join(" ").toLowerCase();
+return campos.indexOf(f) !== -1;
+});
+}
+candidatos.sort(function(a,b){
+const da = Math.abs((Number(a.monto)||0) - (Number(origen.monto)||0));
+const db = Math.abs((Number(b.monto)||0) - (Number(origen.monto)||0));
+if(da!==db) return da-db;
+return new Date(b.fecha) - new Date(a.fecha);
+});
+candidatos = candidatos.slice(0, 30);
+const cont = document.getElementById("vincular-resultados");
+if(!candidatos.length){
+cont.innerHTML = '<div style="padding:14px;color:var(--muted);text-align:center;font-size:12.5px;">No encontré ' + (tipoOpuesto==='ingreso'?'ingresos':'egresos') + ' sueltos que coincidan.</div>';
+return;
+}
+cont.innerHTML = candidatos.map(function(m){
+const matchMonto = Math.abs((Number(m.monto)||0) - (Number(origen.monto)||0)) < 1;
+return '<div class="vincular-candidato" data-vincular-elegir="' + m.id + '" style="padding:9px 12px;border-bottom:1px solid var(--border);cursor:pointer;display:flex;justify-content:space-between;align-items:center;' + (matchMonto?'background:var(--planta-soft);':'') + '">' +
+'<div><div style="font-weight:600;">' + escapeHtml(m.entidad||'—') + (matchMonto?' <span style="color:var(--planta);font-size:11px;">✓ mismo monto</span>':'') + '</div>' +
+'<div style="font-size:11.5px;color:var(--muted);">' + escapeHtml(m.cuenta) + ' · ' + fmtDate(m.fecha) + (m.categoria?(' · '+escapeHtml(m.categoria)):'') + '</div></div>' +
+'<div class="mono" style="font-weight:700;">' + money(m.monto) + '</div>' +
+'</div>';
+}).join("");
+}
+document.getElementById("vincular-buscar").addEventListener("input", function(){
+const origen = STATE.movimientos.find(function(x){ return x.id===vincularOrigenId; });
+if(origen) renderResultadosVincular(origen, this.value);
+});
+document.getElementById("vincular-resultados").addEventListener("click", function(e){
+const cand = e.target.closest("[data-vincular-elegir]");
+if(!cand) return;
+const origen = STATE.movimientos.find(function(x){ return x.id===vincularOrigenId; });
+const destino = STATE.movimientos.find(function(x){ return x.id===cand.dataset.vincularElegir; });
+if(!origen || !destino) return;
+const tid = uid();
+const numTr = proximoNumeroTransferencia();
+const egresoM = origen.tipo==="egreso" ? origen : destino;
+const ingresoM = origen.tipo==="ingreso" ? origen : destino;
+origen.transferenciaId = tid; origen.numeroTransferencia = numTr;
+destino.transferenciaId = tid; destino.numeroTransferencia = numTr;
+egresoM.cuentaOrigen = egresoM.cuenta; egresoM.cuentaDestino = ingresoM.cuenta;
+ingresoM.cuentaOrigen = egresoM.cuenta; ingresoM.cuentaDestino = ingresoM.cuenta;
+document.getElementById("modal-vincular-overlay").classList.remove("open");
+toast("Vinculados como transferencia #" + numTr + ".");
+saveAndRender();
+});
+document.getElementById("btn-vincular-cancelar").addEventListener("click", function(){
+document.getElementById("modal-vincular-overlay").classList.remove("open");
 });
 document.getElementById("mayor-detalle-buscar").addEventListener("input", function(){
 renderMayorDetalle();
@@ -4812,7 +5731,7 @@ let cobroAsignacion = "sin_clasificar";
 
 function fillCobroSubcontratadoSelect(){
 const sel = document.getElementById("cobro-subcontratado-select");
-let html = STATE.subcontratados.map(function(s){
+let html = STATE.subcontratados.filter(function(s){ return !s.cerrado; }).map(function(s){
 return '<option value="' + s.id + '">' + escapeHtml(s.nombre) + '</option>';
 }).join("");
 html += '<option value="__new__">➕ Nuevo subcontratado…</option>';
@@ -5127,7 +6046,7 @@ const msg = tieneMovimiento
 const ok = await confirmDialog(msg, "Borrar factura");
 if(ok){
 if(tieneMovimiento){
-STATE.movimientos = STATE.movimientos.filter(function(m){ return m.id!==factura.movimientoId; });
+moverAPapelera([factura.movimientoId]);
 }
 STATE.facturas = STATE.facturas.filter(function(f){ return f.id!==del.dataset.factDel; });
 saveAndRender();
@@ -5160,7 +6079,8 @@ const real = gfRealParaMes(gf, mesStr);
 eventos.push({
 fecha: fecha, fechaStr: fecha.toISOString().slice(0,10),
 nombre: gf.concepto || gf.nombre, categoria: gf.categoria || "",
-monto: proy, pagado: (real !== null && real > 0), real: real
+monto: proy, pagado: (real !== null && real > 0), real: real,
+totalCuotas: gf.totalCuotas || null, numeroCuota: gf.totalCuotas ? numeroCuota(gf, mesStr) : null
 });
 }
 }
@@ -5230,7 +6150,7 @@ html += '<div style="display:flex;align-items:center;gap:14px;padding:10px 14px;
 '</div>' +
 '<div style="flex:1;min-width:0;">' +
 '<div style="font-weight:600;">' + escapeHtml(ev.nombre) + '</div>' +
-'<div style="font-size:11.5px;color:var(--muted);">' + escapeHtml(ev.categoria) + '</div>' +
+'<div style="font-size:11.5px;color:var(--muted);">' + escapeHtml(ev.categoria) + (ev.totalCuotas ? (' · Cuota ' + ev.numeroCuota + '/' + ev.totalCuotas) : ' · Recurrente') + '</div>' +
 '</div>' +
 '<div class="mono" style="font-weight:700;flex-shrink:0;">' + money(ev.monto) + '</div>' +
 '<div style="width:100px;text-align:right;flex-shrink:0;">' +
@@ -5347,6 +6267,15 @@ if(!STATE.categoriaProyeccionOverrides || typeof STATE.categoriaProyeccionOverri
 if(!STATE.gastosFijosOverrides || typeof STATE.gastosFijosOverrides !== "object") STATE.gastosFijosOverrides = {};
 const nMov = STATE.movimientos.length;
 const nFact = STATE.facturas.length;
+try{
+migrarEgresosSueltosHaciaYoel();
+completarParesFacturaYoel();
+asignarNumerosTransferencia();
+asignarNumerosMovimiento();
+limpiarPapeleraVencida();
+repararIngresosAutomaticosYoel();
+migrarClavesProyACompuestas();
+}catch(migErr){ console.error("Error en migraciones tras importar:", migErr); }
 pendingImportData = null;
 document.getElementById("import-confirm-box").style.display = "none";
 document.getElementById("modal-debug-overlay").classList.remove("open");
@@ -5400,8 +6329,12 @@ reader.readAsText(file);
 });
 
 function saveAndRender(){
+asignarNumerosTransferencia();
+asignarNumerosMovimiento();
 saveState();
 renderAll();
+const va = document.getElementById("vista-anual");
+if(va && va.style.display !== "none" && typeof renderVistaAnualTabla === "function") renderVistaAnualTabla();
 }
 
 function iniciarTiempoReal(){
@@ -5457,6 +6390,7 @@ window.open(window.location.pathname + "#anual", "_blank");
 });
 }
 let anualCategoriasAbiertas = {};
+let anualSeccionesAbiertas = {};
 let anualEstadoTodoExpandido = false;
 async function arrancarVistaAnual(){
 await loadState();
@@ -5474,10 +6408,17 @@ window.location.href = window.location.pathname;
 }, 200);
 });
 document.getElementById("btn-anual-minimizar-todo").addEventListener("click", function(){
-const claves = Array.from(document.querySelectorAll("#anual-table [data-anual-toggle-cat]")).map(function(el){ return el.dataset.anualToggleCat; });
-const clavesUnicas = Array.from(new Set(claves));
 anualEstadoTodoExpandido = !anualEstadoTodoExpandido;
-clavesUnicas.forEach(function(key){ anualCategoriasAbiertas[key] = anualEstadoTodoExpandido; });
+const clavesSeccion = ["ING-PLANTA","ING-SUB","FIJ","VAR","COM","AHORRO"];
+clavesSeccion.forEach(function(key){ anualSeccionesAbiertas[key] = anualEstadoTodoExpandido; });
+const todasLasCategorias = {};
+STATE.gastosFijos.forEach(function(gf){ todasLasCategorias[gf.categoria || "(Sin categoría)"] = true; });
+Object.keys(STATE.categoriaProyeccion).forEach(function(clave){ todasLasCategorias[nombreDeClaveProy(clave)] = true; });
+clavesSeccion.forEach(function(key){
+Object.keys(todasLasCategorias).forEach(function(cat){
+anualCategoriasAbiertas[key + "::" + cat] = anualEstadoTodoExpandido;
+});
+});
 this.textContent = anualEstadoTodoExpandido ? "▸ Minimizar todo" : "▾ Ampliar todo";
 renderVistaAnualTabla();
 });
@@ -5494,6 +6435,59 @@ if(activo && (activo.hasAttribute("data-anual-item") || activo.hasAttribute("dat
 renderVistaAnualTabla();
 }, 4000);
 }
+
+function renderAnualReales(){
+const body = document.getElementById("anual-reales-body");
+const anio = document.getElementById("anual-year-select").value || periodoStr().slice(0,4);
+const DESTINOS_NEUTRALES = {ajuste:true, transferencia:true};
+// Real por categoría y mes, para todo el año elegido — pura referencia, no toca la proyección.
+function tabla(tipo, titulo, colorClass){
+const porCatMes = {};
+STATE.movimientos.forEach(function(m){
+if(m.tipo!==tipo) return;
+if(DESTINOS_NEUTRALES[m.destino]) return;
+const mes = (m.fecha||"").slice(0,7);
+if(mes.slice(0,4)!==anio) return;
+const mesNum = Number(mes.slice(5,7));
+const cat = m.categoria || "(Sin categoría)";
+if(!porCatMes[cat]) porCatMes[cat] = Array(12).fill(0);
+porCatMes[cat][mesNum-1] += (Number(m.monto)||0);
+});
+const cats = Object.keys(porCatMes).sort(function(a,b){
+const totalA = porCatMes[a].reduce(function(x,y){return x+y;},0);
+const totalB = porCatMes[b].reduce(function(x,y){return x+y;},0);
+return totalB - totalA;
+});
+if(!cats.length){
+return '<div style="margin-bottom:20px;"><div style="font-weight:700;margin-bottom:6px;" class="' + colorClass + '">' + titulo + '</div><div style="color:var(--muted);font-size:12.5px;">Sin movimientos este año.</div></div>';
+}
+const totalesPorMes = Array(12).fill(0);
+cats.forEach(function(cat){ porCatMes[cat].forEach(function(v,i){ totalesPorMes[i]+=v; }); });
+let html = '<div style="margin-bottom:24px;"><div style="font-weight:700;margin-bottom:6px;" class="' + colorClass + '">' + titulo + '</div>';
+html += '<table style="width:100%;font-size:11px;border-collapse:collapse;"><thead><tr style="color:var(--muted);text-align:right;"><th style="text-align:left;padding:4px 6px;">Categoría</th>';
+MESES_ABREV.forEach(function(mAbr){ html += '<th style="padding:4px 6px;">' + mAbr + '</th>'; });
+html += '</tr></thead><tbody>';
+cats.forEach(function(cat){
+html += '<tr><td style="padding:4px 6px;font-weight:600;">' + escapeHtml(cat) + '</td>';
+porCatMes[cat].forEach(function(v){
+html += '<td class="mono" style="padding:4px 6px;text-align:right;' + (v===0?'color:var(--muted);':'') + '">' + (v>0?money(v):'—') + '</td>';
+});
+html += '</tr>';
+});
+html += '<tr style="border-top:1px solid var(--border);font-weight:700;"><td style="padding:4px 6px;">Total</td>';
+totalesPorMes.forEach(function(v){ html += '<td class="mono" style="padding:4px 6px;text-align:right;">' + money(v) + '</td>'; });
+html += '</tr></tbody></table></div>';
+return html;
+}
+body.innerHTML = tabla("ingreso", "Ingresos reales", "pos") + tabla("egreso", "Egresos reales", "neg");
+}
+document.getElementById("btn-anual-ver-reales").addEventListener("click", function(){
+renderAnualReales();
+document.getElementById("modal-anual-reales-overlay").classList.add("open");
+});
+document.getElementById("btn-anual-reales-cerrar").addEventListener("click", function(){
+document.getElementById("modal-anual-reales-overlay").classList.remove("open");
+});
 
 function renderVistaAnualTabla(){
 const anio = document.getElementById("anual-year-select").value || periodoStr().slice(0,4);
@@ -5552,27 +6546,44 @@ meses.forEach(function(mo){ totalesPorMes[mo] = {ingresos:0, gastos:0}; });
 
 SECCIONES.forEach(function(secc){
 const itemsSeccion = items.filter(secc.match);
-body += '<tr><td colspan="' + (meses.length+1) + '" style="background:' + secc.bg + ';color:' + secc.fg + ';font-weight:700;padding:8px 12px;font-family:var(--font-display);">' + secc.titulo + '</td></tr>';
 const grupos = {};
 itemsSeccion.forEach(function(item){
 if(!grupos[item.categoria]) grupos[item.categoria] = [];
 grupos[item.categoria].push(item);
 });
 const cats = Object.keys(grupos);
+
+// El subtotal (y su aporte al TOTAL general) se calcula siempre, esté colapsada o no la sección.
+const subtotalSeccion = {};
+meses.forEach(function(mo){ subtotalSeccion[mo] = 0; });
+cats.forEach(function(cat){
+grupos[cat].forEach(function(item){
+meses.forEach(function(mo){
+const v = valorDe(item, mo);
+if(v){ subtotalSeccion[mo] += v; if(secc.key==="AHORRO"){} else if(item.tipo==="ingreso") totalesPorMes[mo].ingresos += v; else totalesPorMes[mo].gastos += v; }
+});
+});
+});
+
+const seccionAbierta = !!anualSeccionesAbiertas[secc.key];
+if(!seccionAbierta){
+body += '<tr style="background:' + secc.bg + ';cursor:pointer;" data-anual-toggle-seccion="' + secc.key + '"><td style="position:sticky;left:0;background:' + secc.bg + ';color:' + secc.fg + ';font-weight:700;padding:8px 12px;font-family:var(--font-display);"><span style="display:inline-block;width:14px;">▸</span>' + secc.titulo + '</td>' + meses.map(function(mo){ return '<td class="mono" style="text-align:right;padding:6px 8px;font-weight:700;color:' + secc.fg + ';">' + (subtotalSeccion[mo]>0?money(subtotalSeccion[mo]):'—') + '</td>'; }).join("") + '</tr>';
+return;
+}
+
+body += '<tr style="cursor:pointer;" data-anual-toggle-seccion="' + secc.key + '"><td colspan="' + (meses.length+1) + '" style="background:' + secc.bg + ';color:' + secc.fg + ';font-weight:700;padding:8px 12px;font-family:var(--font-display);"><span style="display:inline-block;width:14px;">▾</span>' + secc.titulo + '</td></tr>';
 if(!cats.length){
 body += '<tr><td colspan="' + (meses.length+1) + '" style="padding:8px 12px;color:var(--muted);font-style:italic;">Nada cargado.</td></tr>';
 }
-const subtotalSeccion = {};
-meses.forEach(function(mo){ subtotalSeccion[mo] = 0; });
 cats.forEach(function(cat){
 const claveToggle = secc.key + "::" + cat;
 const abierta = !!anualCategoriasAbiertas[claveToggle];
 body += '<tr style="background:var(--surface-2);cursor:pointer;" data-anual-toggle-cat="' + escapeHtml(claveToggle) + '"><td style="position:sticky;left:0;background:var(--surface-2);padding:6px 12px;font-weight:700;"><span style="display:inline-block;width:14px;">' + (abierta?'▾':'▸') + '</span>' + escapeHtml(cat) + '</td>' + meses.map(function(){ return '<td></td>'; }).join("") + '</tr>';
 grupos[cat].forEach(function(item){
-body += '<tr class="anual-detalle-row" data-anual-cat="' + escapeHtml(claveToggle) + '" style="' + (abierta?'':'display:none;') + '"><td style="position:sticky;left:0;background:var(--surface);padding:6px 12px 6px 24px;color:var(--text-soft);">' + escapeHtml(item.nombre) + '</td>';
+const botonEditar = !item.esDirecta ? (' <button data-anual-editar-gf="' + item.ref.id + '" title="Editar concepto (monto base, día de vencimiento, cuotas)" style="border:none;background:transparent;cursor:pointer;color:var(--muted);font-size:11px;vertical-align:middle;">✎</button>' + (item.ref.diaVencimiento ? (' <span style="font-size:9.5px;color:var(--brand);">📅' + item.ref.diaVencimiento + '</span>') : '') + (item.ref.totalCuotas ? (' <span style="font-size:9.5px;color:#4B5871;">' + (numeroCuota(item.ref, meses[0])||1) + '/' + item.ref.totalCuotas + '</span>') : '')) : '';
+body += '<tr class="anual-detalle-row" data-anual-cat="' + escapeHtml(claveToggle) + '" style="' + (abierta?'':'display:none;') + '"><td style="position:sticky;left:0;background:var(--surface);padding:6px 12px 6px 24px;color:var(--text-soft);">' + escapeHtml(item.nombre) + botonEditar + '</td>';
 meses.forEach(function(mo){
 const v = valorDe(item, mo);
-if(v){ subtotalSeccion[mo] += v; if(secc.key==="AHORRO"){} else if(item.tipo==="ingreso") totalesPorMes[mo].ingresos += v; else totalesPorMes[mo].gastos += v; }
 body += '<td class="mono" style="padding:2px;text-align:center;"><div style="display:flex;align-items:center;gap:2px;justify-content:flex-end;"><span style="color:var(--muted);font-size:10.5px;">$</span><input type="number" data-anual-item="' + items.indexOf(item) + '" data-anual-mes="' + mo + '" value="' + (v!==null?v:'') + '" placeholder="—" style="width:72px;padding:5px;border:1px solid transparent;border-radius:6px;text-align:right;font-family:var(--font-mono);font-size:12px;background:transparent;color:var(--text);"></div></td>';
 });
 body += '</tr>';
@@ -5619,6 +6630,21 @@ STATE.categoriaProyeccion[claveNueva] = { monto: 0, destino: info.destino, tipo:
 saveAndRender();
 renderVistaAnualTabla();
 toast('Categoría "' + nombre + '" creada — conectada con la vista mensual.');
+});
+});
+
+document.getElementById("anual-table").querySelectorAll("[data-anual-editar-gf]").forEach(function(btn){
+btn.addEventListener("click", function(e){
+e.stopPropagation();
+abrirEdicionGastoFijo(this.dataset.anualEditarGf);
+});
+});
+
+document.getElementById("anual-table").querySelectorAll("[data-anual-toggle-seccion]").forEach(function(row){
+row.addEventListener("click", function(){
+const key = this.dataset.anualToggleSeccion;
+anualSeccionesAbiertas[key] = !anualSeccionesAbiertas[key];
+renderVistaAnualTabla();
 });
 });
 
