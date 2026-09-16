@@ -469,7 +469,7 @@ main.content{padding:22px 18px 50px;}
 <button id="btn-toggle-theme" style="width:100%;margin-top:8px;padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--surface-2);color:var(--text);font-size:12.5px;cursor:pointer;">🌙 Modo oscuro</button>
 <div class="sidebar-foot" id="storage-status">Guardando localmente…</div>
 <div id="supabase-diag" style="display:none;padding:8px 10px;border-radius:8px;margin-top:8px;font-family:monospace;font-size:10.5px;font-weight:600;line-height:1.4;"></div>
-<div class="sidebar-foot" style="margin-top:4px;opacity:.6;">Versión: 2026-08-13.161 (check En Cash por movimiento en Mayor)</div>
+<div class="sidebar-foot" style="margin-top:4px;opacity:.6;">Versión: 2026-08-13.165 (boton borrar completo desde Agenda)</div>
 <div class="sidebar-foot" style="margin-top:6px;"><a href="#" id="btn-debug" style="color:#2F6FED;text-decoration:underline;">Ver datos guardados (debug)</a></div>
 <div class="sidebar-foot" style="margin-top:6px;display:flex;gap:10px;">
 <a href="#" id="btn-exportar-archivo" style="color:#2F6FED;text-decoration:underline;">Exportar</a>
@@ -725,9 +725,12 @@ Excluir Dividendos (se pagan al final)
 
 <!-- ============ AGENDA ============ -->
 <section class="view" id="view-agenda">
-<div class="viewhead">
+<div class="viewhead" style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;">
+<div>
 <h1>📅 Agenda de Vencimientos</h1>
 <p>Recordatorio de pagos con día fijo cargado — Sueldos, Comisiones, Alquileres, lo que le hayas puesto un día del mes.</p>
+</div>
+<button type="button" id="btn-agenda-nuevo-repetitivo" class="btn btn-primary" style="white-space:nowrap;">+ Nuevo gasto repetitivo</button>
 </div>
 <div class="panel">
 <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:16px;">
@@ -870,6 +873,10 @@ Solo mostrar lo que todavía no se pagó
 <div class="form-row" id="factura-match-box" style="display:none;">
 <label>¿Corresponde a algo pendiente? Elegí uno y te completamos los datos.</label>
 <div class="meses-chips" id="factura-match-list"></div>
+</div>
+<div class="form-row">
+<label>🔁 ¿Es uno de tus gastos/ingresos repetitivos? (opcional)</label>
+<select id="f-gasto-repetitivo-select"><option value="">— Ninguno, es puntual —</option></select>
 </div>
 <div class="form-grid">
 <div class="form-row">
@@ -1161,7 +1168,7 @@ Solo mostrar lo que todavía no se pagó
 <div class="form-row"><label>Nombre</label><input type="text" id="gfe-nombre"></div>
 <div class="form-row"><label>Concepto (tiene que coincidir con la Entidad del movimiento real)</label><input type="text" id="gfe-concepto"></div>
 <div class="form-row">
-<label>Proyección <a href="#" id="gfe-toggle-modo" style="font-size:10.5px;font-weight:400;">(usar %)</a></label>
+<label>Monto Proyectado <a href="#" id="gfe-toggle-modo" style="font-size:10.5px;font-weight:400;">(usar %)</a></label>
 <input type="number" id="gfe-monto" step="0.01">
 <input type="number" id="gfe-porcentaje" step="0.1" placeholder="% de Ingresos" style="display:none;">
 </div>
@@ -3031,6 +3038,7 @@ formFactura.reset();
 setTipoUI(tipoGroup, "ingreso");
 setTipoUI(tipoFactGroup, "emitida");
 fillCuentaSelect();
+fillGastoRepetitivoSelect();
 actualizarVisibilidadYoelCheckbox();
 document.getElementById("aj-cuenta").innerHTML = STATE.cuentas.map(function(c){ return '<option value="' + escapeHtml(c) + '">' + escapeHtml(c) + '</option>'; }).join("");
 document.getElementById("aj-monto").value = "";
@@ -3126,12 +3134,36 @@ function setTipoUI(group, val){
 group.querySelectorAll("label").forEach(function(l){ l.classList.toggle("checked", l.dataset.val===val); });
 group.dataset.value = val;
 }
+function fillGastoRepetitivoSelect(){
+const sel = document.getElementById("f-gasto-repetitivo-select");
+if(!sel) return;
+const tipo = tipoGroup.dataset.value || "ingreso";
+const opciones = STATE.gastosFijos.filter(function(gf){ return (gf.tipo==="ingreso") === (tipo==="ingreso"); });
+sel.innerHTML = '<option value="">— Ninguno, es puntual —</option>' +
+opciones.map(function(gf){ return '<option value="' + gf.id + '">' + escapeHtml(gf.nombre) + (gf.monto ? (' ('+money(gf.monto)+')') : '') + '</option>'; }).join("");
+}
+document.getElementById("f-gasto-repetitivo-select").addEventListener("change", function(){
+const gfId = this.value;
+const gf = STATE.gastosFijos.find(function(g){ return g.id===gfId; });
+if(!gf) return;
+document.getElementById("f-entidad").value = gf.concepto || gf.nombre || "";
+if(gf.categoria){
+const catSel = document.getElementById("f-categoria-select");
+if(catSel && Array.from(catSel.options).some(function(o){ return o.value===gf.categoria; })) catSel.value = gf.categoria;
+}
+if(gf.destino && ["planta","ambos","retiro","subcontratado"].indexOf(gf.destino)!==-1){
+const btn = document.querySelector('#asig-group .asig-btn[data-val="' + gf.destino + '"]');
+if(btn) btn.click();
+}
+document.getElementById("f-monto").focus();
+});
 tipoGroup.addEventListener("click", function(e){
 const l = e.target.closest("label");
 if(!l) return;
 setTipoUI(tipoGroup, l.dataset.val);
 renderFacturaMatches();
 actualizarVisibilidadYoelCheckbox();
+fillGastoRepetitivoSelect();
 });
 document.getElementById("f-cuenta").addEventListener("change", actualizarVisibilidadYoelCheckbox);
 function actualizarVisibilidadYoelCheckbox(){
@@ -3703,6 +3735,7 @@ function abrirEdicionGastoFijo(id){
 const gf = STATE.gastosFijos.find(function(g){ return g.id===id; });
 if(!gf) return;
 gfEditandoId = id;
+document.getElementById("modal-gf-editar-overlay").querySelector("h2").textContent = "Editar gasto fijo";
 fillGfCategoriaSelectEn("gfe-categoria");
 document.getElementById("gfe-categoria").value = gf.categoria || "";
 document.getElementById("gfe-nombre").value = gf.nombre || "";
@@ -3721,6 +3754,30 @@ document.getElementById("gfe-porcentaje").value = esPct ? (gf.porcentaje || "") 
 document.getElementById("gfe-monto").style.display = esPct ? "none" : "block";
 document.getElementById("gfe-porcentaje").style.display = esPct ? "block" : "none";
 document.getElementById("gfe-toggle-modo").textContent = esPct ? "(usar monto fijo)" : "(usar %)";
+document.getElementById("modal-gf-editar-overlay").classList.add("open");
+}
+// Mismo formulario que editar, pero arranca en blanco — gfEditandoId queda en null y el guardado
+// sabe que tiene que crear un gasto fijo nuevo en vez de buscar uno existente. Útil para cargar
+// un débito automático / gasto repetitivo directo desde la Agenda, con su día de vencimiento.
+function abrirNuevoGastoFijo(){
+gfEditandoId = null;
+document.getElementById("modal-gf-editar-overlay").querySelector("h2").textContent = "Nuevo gasto repetitivo";
+fillGfCategoriaSelectEn("gfe-categoria");
+document.getElementById("gfe-categoria").value = "";
+document.getElementById("gfe-nombre").value = "";
+document.getElementById("gfe-concepto").value = "";
+document.getElementById("gfe-destino").value = "planta";
+document.getElementById("gfe-mesinicio").value = periodoStr();
+document.getElementById("gfe-diavencimiento").value = "";
+document.querySelectorAll("#gfe-repeticion-group label").forEach(function(l){ l.classList.toggle("checked", l.dataset.val==="recurrente"); });
+document.getElementById("gfe-repeticion-group").dataset.value = "recurrente";
+document.getElementById("gfe-cuotas-row").style.display = "none";
+document.getElementById("gfe-totalcuotas").value = "";
+document.getElementById("gfe-monto").value = "";
+document.getElementById("gfe-porcentaje").value = "";
+document.getElementById("gfe-monto").style.display = "block";
+document.getElementById("gfe-porcentaje").style.display = "none";
+document.getElementById("gfe-toggle-modo").textContent = "(usar %)";
 document.getElementById("modal-gf-editar-overlay").classList.add("open");
 }
 document.getElementById("gfe-toggle-modo").addEventListener("click", function(e){
@@ -3749,10 +3806,17 @@ document.getElementById("modal-gf-editar-overlay").classList.remove("open");
 });
 document.getElementById("btn-gfe-guardar").addEventListener("click", function(){
 try{
-const gf = STATE.gastosFijos.find(function(g){ return g.id===gfEditandoId; });
+const esNuevo = !gfEditandoId;
+let gf;
+if(esNuevo){
+gf = {id: uid()};
+} else {
+gf = STATE.gastosFijos.find(function(g){ return g.id===gfEditandoId; });
 if(!gf) return;
+}
 const nombre = document.getElementById("gfe-nombre").value.trim();
 const concepto = document.getElementById("gfe-concepto").value.trim();
+if(esNuevo && !nombre && !concepto){ toast("Ponele un nombre o concepto."); return; }
 gf.categoria = document.getElementById("gfe-categoria").value;
 gf.nombre = nombre || concepto;
 gf.concepto = concepto;
@@ -3776,9 +3840,10 @@ gf.porcentaje = Number(document.getElementById("gfe-porcentaje").value) || gf.po
 gf.modoProyeccion = null;
 gf.monto = Number(document.getElementById("gfe-monto").value) || gf.monto || 0;
 }
+if(esNuevo) STATE.gastosFijos.push(gf);
 document.getElementById("modal-gf-editar-overlay").classList.remove("open");
 saveAndRender();
-toast("Gasto fijo actualizado.");
+toast(esNuevo ? "Gasto repetitivo creado." : "Gasto fijo actualizado.");
 }catch(err){
 toast("No se pudo guardar: " + err.message);
 }
@@ -6078,7 +6143,7 @@ if(proy !== null && proy > 0){
 const real = gfRealParaMes(gf, mesStr);
 eventos.push({
 fecha: fecha, fechaStr: fecha.toISOString().slice(0,10),
-nombre: gf.concepto || gf.nombre, categoria: gf.categoria || "",
+nombre: gf.concepto || gf.nombre, categoria: gf.categoria || "", destino: gf.destino || "sin_clasificar", gfId: gf.id,
 monto: proy, pagado: (real !== null && real > 0), real: real,
 totalCuotas: gf.totalCuotas || null, numeroCuota: gf.totalCuotas ? numeroCuota(gf, mesStr) : null
 });
@@ -6091,6 +6156,13 @@ cursor.setMonth(cursor.getMonth()+1);
 eventos.sort(function(a,b){ return a.fecha - b.fecha; });
 return eventos;
 }
+
+
+document.getElementById("agenda-body").addEventListener("click", async function(e){
+const btn = e.target.closest("[data-agenda-borrar]");
+if(!btn) return;
+await borrarGastoFijo(btn.dataset.agendaBorrar);
+});
 
 function renderAgenda(){
 const body = document.getElementById("agenda-body");
@@ -6153,15 +6225,19 @@ html += '<div style="display:flex;align-items:center;gap:14px;padding:10px 14px;
 '<div style="font-size:11.5px;color:var(--muted);">' + escapeHtml(ev.categoria) + (ev.totalCuotas ? (' · Cuota ' + ev.numeroCuota + '/' + ev.totalCuotas) : ' · Recurrente') + '</div>' +
 '</div>' +
 '<div class="mono" style="font-weight:700;flex-shrink:0;">' + money(ev.monto) + '</div>' +
-'<div style="width:100px;text-align:right;flex-shrink:0;">' +
+'<div style="width:110px;text-align:right;flex-shrink:0;display:flex;align-items:center;justify-content:flex-end;gap:6px;">' +
 (ev.pagado ? '<span style="color:var(--planta);font-size:12px;font-weight:600;">✓ Pagado</span>' : (vencido ? '<span style="color:var(--danger);font-weight:700;font-size:12px;">⚠ Vencido</span>' : '<span style="color:var(--text-soft);font-size:12px;">Pendiente</span>')) +
 '</div>' +
+'<button class="icon-btn danger" data-agenda-borrar="' + ev.gfId + '" title="Borrar este gasto repetitivo por completo (todos los meses, no solo esta cuota)">' + ICONS.trash + '</button>' +
 '</div>';
 });
 html += '</div>';
 });
 body.innerHTML = html;
 }
+document.getElementById("btn-agenda-nuevo-repetitivo") && document.getElementById("btn-agenda-nuevo-repetitivo").addEventListener("click", function(){
+abrirNuevoGastoFijo();
+});
 document.getElementById("agenda-modo-tabs") && document.getElementById("agenda-modo-tabs").addEventListener("click", function(e){
 const t = e.target.closest(".modal-tab");
 if(!t) return;
